@@ -1,0 +1,14 @@
+# docker/Dockerfile.worker
+FROM prefecthq/prefect:3-latest
+
+WORKDIR /app
+
+# Install Python dependencies (use pinned versions in requirements.txt)
+COPY requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r /app/requirements.txt
+
+# Copy flows and tasks for image builds (compose mounts repo for dev)
+COPY flows/ /app/flows/
+COPY tasks/ /app/tasks/
+
+ENV PYTHONPATH=/app

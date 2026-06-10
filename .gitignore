@@ -1,1 +1,5 @@
 notes.txt
+__pycache__
+.env
+openresearch/
+.vscode
