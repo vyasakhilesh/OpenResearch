@@ -19,7 +19,7 @@ drive.mount('/content/drive')
 
 
 # Environment variables
-MW_API = "https://www.openresearch.org/mediawiki/api.php"
+OR_API = "https://www.openresearch.org/mediawiki/api.php"
 MW_USER = userdata.get('OR_USER') # os.environ.get("OR_USER")
 MW_PASS = userdata.get('OR_PASS') # os.environ.get("OR_PASS")
 DRY_RUN = False  # set False to actually edit
@@ -52,15 +52,15 @@ core_26_dict = dict(zip(df_core_26[2], df_core_26[4]))
 # 1. Login to MediaWiki
 # https://www.mediawiki.org/wiki/API:Login
 def mw_login():
-    r = session.get(MW_API, params={"action":"query","meta":"tokens","type":"login","format":"json"})
+    r = session.get(OR_API, params={"action":"query","meta":"tokens","type":"login","format":"json"})
     token = r.json()["query"]["tokens"]["logintoken"]
     print("Token: ", token)
     payload = {"action":"login","lgname":MW_USER,"lgpassword":MW_PASS,"lgtoken":token,"format":"json"}
-    r = session.post(MW_API, data=payload)
+    r = session.post(OR_API, data=payload)
     # print("Data: ", r.json())
     if r.json().get("login",{}).get("result") not in ("Success","NeedToken"):
         raise Exception("Login failed: " + str(r.json()))
-    r = session.get(MW_API, params={"action":"query","meta":"tokens","format":"json"})
+    r = session.get(OR_API, params={"action":"query","meta":"tokens","format":"json"})
     return r.json()["query"]["tokens"]["csrftoken"]
 
 # 2. Query series and check for upcoming events
@@ -71,7 +71,7 @@ def get_series_without_upcoming():
     # Limit: "cmlimit":"max"
     params = {"action":"query","list":"categorymembers","cmtitle":"Category:Event series","cmlimit":"max","format":"json"}
     pages = []
-    r = session.get(MW_API, params=params).json()
+    r = session.get(OR_API, params=params).json()
     # print("Page Data:", r)
     pages.extend(r["query"]["categorymembers"])
     series_without = []
@@ -79,7 +79,7 @@ def get_series_without_upcoming():
         title = p["title"]
         ask_query = f'[[Series::{title}]] [[Start date::>={today}]]'
         ask_params = {"action":"ask","query":ask_query,"format":"json"}
-        r = session.get(MW_API, params=ask_params).json()
+        r = session.get(OR_API, params=ask_params).json()
         if not r.get("query",{}).get("results"):
             # print("Ask Data:", r)
             series_without.append(title)
@@ -174,7 +174,7 @@ def extract_event_fields(text: str) -> Dict[str, Optional[str]]:
     }
 
 def get_page_wikitext(title):
-    r = session.get(MW_API, params={"action":"query","prop":"revisions","rvprop":"content","titles":title,"format":"json"})
+    r = session.get(OR_API, params={"action":"query","prop":"revisions","rvprop":"content","titles":title,"format":"json"})
     r.raise_for_status()
     pages = r.json().get("query", {}).get("pages", {})
     page = next(iter(pages.values()))
@@ -538,13 +538,13 @@ def create_page(title, content, summary, csrf_token):
         # "createonly": True,
         "format": "json"
     }
-    r = session.post(MW_API, data=payload)
+    r = session.post(OR_API, data=payload)
     return r.json()
 
 # 6. Delete page
 def delete_page(title, csrf_token):
     # Delete page if already exist
-    r = session.post(MW_API, data={'action':"delete", 'title':title, 'token':csrf_token, 'format':"json"})
+    r = session.post(OR_API, data={'action':"delete", 'title':title, 'token':csrf_token, 'format':"json"})
     return r.json()
 
 
@@ -556,7 +556,7 @@ def page_exists(title, csrf_token):
         "prop": "info",
         "inprop": "url",
     }
-    r = session.get(MW_API, params=params)
+    r = session.get(OR_API, params=params)
     r.raise_for_status()
     data = r.json()
     # print(data)
@@ -617,7 +617,7 @@ def get_pages_by_user_on_date(
         # merge continuation if present
         req_params = params.copy()
         req_params.update(cont)
-        r = session.get(MW_API, params=req_params)
+        r = session.get(OR_API, params=req_params)
         r.raise_for_status()
         data = r.json()
 

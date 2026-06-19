@@ -9,7 +9,7 @@ from google.colab import drive
 drive.mount('/content/drive')
 
 # Configuration
-MW_API = "https://www.openresearch.org/mediawiki/api.php"
+OR_API = "https://www.openresearch.org/mediawiki/api.php"
 MW_USER = os.environ.get("OR_USER") or userdata.get("OR_USER")
 MW_PASS = os.environ.get("OR_PASS") or userdata.get("OR_PASS")
 DRY_RUN = False  # Set to False to perform real edits
@@ -26,16 +26,16 @@ session.mount("https://", adapter)
 session.mount("http://", adapter)
 
 def mw_login():
-    r = session.get(MW_API, params={"action":"query","meta":"tokens","type":"login","format":"json"})
+    r = session.get(OR_API, params={"action":"query","meta":"tokens","type":"login","format":"json"})
     r.raise_for_status()
     token = r.json()["query"]["tokens"]["logintoken"]
     payload = {"action":"login","lgname":MW_USER,"lgpassword":MW_PASS,"lgtoken":token,"format":"json"}
-    r = session.post(MW_API, data=payload)
+    r = session.post(OR_API, data=payload)
     r.raise_for_status()
     result = r.json().get("login", {}).get("result")
     if result not in ("Success", "NeedToken"):
         raise RuntimeError(f"Login failed: {r.json()}")
-    r = session.get(MW_API, params={"action":"query","meta":"tokens","format":"json"})
+    r = session.get(OR_API, params={"action":"query","meta":"tokens","format":"json"})
     r.raise_for_status()
     return r.json()["query"]["tokens"]["csrftoken"]
 
@@ -43,7 +43,7 @@ def get_series_titles():
     params = {"action":"query","list":"categorymembers","cmtitle":"Category:Event series","cmlimit":"max","format":"json"}
     titles = []
     while True:
-        r = session.get(MW_API, params=params)
+        r = session.get(OR_API, params=params)
         r.raise_for_status()
         data = r.json()
         members = data.get("query", {}).get("categorymembers", [])
@@ -56,7 +56,7 @@ def get_series_titles():
     return titles
 
 def get_page_wikitext(title):
-    r = session.get(MW_API, params={"action":"query","prop":"revisions","rvprop":"content","titles":title,"format":"json"})
+    r = session.get(OR_API, params={"action":"query","prop":"revisions","rvprop":"content","titles":title,"format":"json"})
     r.raise_for_status()
     pages = r.json().get("query", {}).get("pages", {})
     page = next(iter(pages.values()))
@@ -76,7 +76,7 @@ def edit_page(title, new_text, token, summary="Update core ranking"):
         "summary": summary,
         "bot": True
     }
-    r = session.post(MW_API, data=payload)
+    r = session.post(OR_API, data=payload)
     r.raise_for_status()
     return r.json()
 

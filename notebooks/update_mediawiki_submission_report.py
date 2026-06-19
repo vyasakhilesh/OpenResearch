@@ -20,7 +20,7 @@ from sys import exception
 
 
 # Configuration
-MW_API = "https://www.openresearch.org/mediawiki/api.php"
+OR_API = "https://www.openresearch.org/mediawiki/api.php"
 MW_USER = os.environ.get("OR_USER") or userdata.get("OR_USER")
 MW_PASS = os.environ.get("OR_PASS") or userdata.get("OR_PASS")
 LLM_API_KEY = userdata.get('OPENROUTER_API_KEY') # os.environ.get("OPENROUTER_API_KEY")  # or other LLM
@@ -40,21 +40,21 @@ session.mount("http://", adapter)
 # 1. Login to MediaWiki
 # https://www.mediawiki.org/wiki/API:Login
 def mw_login():
-    r = session.get(MW_API, params={"action":"query","meta":"tokens","type":"login","format":"json"}, timeout=(5, 60))
+    r = session.get(OR_API, params={"action":"query","meta":"tokens","type":"login","format":"json"}, timeout=(5, 60))
     r.raise_for_status()
     token = r.json()["query"]["tokens"]["logintoken"]
     payload = {"action":"login","lgname":MW_USER,"lgpassword":MW_PASS,"lgtoken":token,"format":"json"}
-    r = session.post(MW_API, data=payload, timeout=(5, 60))
+    r = session.post(OR_API, data=payload, timeout=(5, 60))
     r.raise_for_status()
     result = r.json().get("login", {}).get("result")
     if result not in ("Success", "NeedToken"):
         raise RuntimeError(f"Login failed: {r.json()}")
-    r = session.get(MW_API, params={"action":"query","meta":"tokens","format":"json"}, timeout=(5, 60))
+    r = session.get(OR_API, params={"action":"query","meta":"tokens","format":"json"}, timeout=(5, 60))
     r.raise_for_status()
     return r.json()["query"]["tokens"]["csrftoken"]
 
 def mw_logout(csrf):
-    r = session.post(MW_API, params={"action": "logout", "token": csrf, "format": "json"}, timeout=(5, 60))
+    r = session.post(OR_API, params={"action": "logout", "token": csrf, "format": "json"}, timeout=(5, 60))
     r.raise_for_status()
     return r.json()
 
@@ -64,7 +64,7 @@ def get_series_titles():
     params = {"action":"query","list":"categorymembers","cmtitle":"Category:Event series","cmlimit":"max","format":"json"}
     titles = []
     while True:
-        r = session.get(MW_API, params=params, timeout=(5, 60))
+        r = session.get(OR_API, params=params, timeout=(5, 60))
         r.raise_for_status()
         data = r.json()
         members = data.get("query", {}).get("categorymembers", [])
@@ -308,7 +308,7 @@ def extract_json_object_from_llm(text: str) -> Optional[Any]:
 
 def get_page_wikitext(title):
     # print(title)
-    r = session.get(MW_API, params={"action":"query","prop":"revisions","rvprop":"content","titles":title,"format":"json"}, timeout=(5, 60))
+    r = session.get(OR_API, params={"action":"query","prop":"revisions","rvprop":"content","titles":title,"format":"json"}, timeout=(5, 60))
     r.raise_for_status()
     pages = r.json().get("query", {}).get("pages", {})
     page = next(iter(pages.values()))
@@ -328,7 +328,7 @@ def edit_page(title, new_text, token, summary="Update paper report"):
         "summary": summary,
         "bot": True
     }
-    r = session.post(MW_API, data=payload, timeout=(5, 60))
+    r = session.post(OR_API, data=payload, timeout=(5, 60))
     r.raise_for_status()
     return r.json()
 
