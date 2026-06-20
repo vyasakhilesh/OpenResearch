@@ -84,7 +84,7 @@ def create_openresearch_events_flow(
                 res = create_page(api_url, page_title, fixed, csrf_token, summary, session, dry_run)
                 logger.info("Create result for page_title %s: result: %s", page_title, res['error']['code'] if res.get('error') else res)
                 if res.get('error'):
-                    logger.error('Create result for page_title %s: result: %s", page_title, res['error']['code']')
+                    logger.error("Create result for page_title %s: result: %s", page_title, res['error']['code'])
                 # time.sleep(1)
             except Exception as e:
                 logger.error("Exception for %s: %s", page_title, e)
