@@ -63,11 +63,11 @@ def render_template(header: str, parsed: List[Tuple[str, Optional[str], Optional
 
 @task
 def set_multiple_params_in_template(wikitext: str, params_to_set: Dict[str, str], template_name: str = "Event") -> Tuple[str, bool, Optional[str]]:
-    tpl = find_template_block.run(wikitext, template_name)  # call task synchronously inside task
+    tpl = find_template_block(wikitext, template_name)  # call task synchronously inside task
     if not tpl:
         return wikitext, False, None
     tpl_text, start, end = tpl
-    header, parsed, footer = parse_template_lines.run(tpl_text)
+    header, parsed, footer = parse_template_lines(tpl_text)
     def norm(s): return re.sub(r'\s+', '', s).lower()
     existing = {norm(name): (i, name, value) for i, (_, name, value) in enumerate(parsed) if name}
     changed = False
@@ -80,13 +80,13 @@ def set_multiple_params_in_template(wikitext: str, params_to_set: Dict[str, str]
         else:
             parsed.append((f"|{pname}={pvalue}", pname, str(pvalue)))
             changed = True
-    new_tpl = render_template.run(header, parsed, footer)
+    new_tpl = render_template(header, parsed, footer)
     new_wikitext = wikitext[:start] + new_tpl + wikitext[end:]
     return new_wikitext, changed, tpl_text
 
 @task
 def extract_acronym_from_template(tpl_text: str) -> Optional[str]:
-    header, parsed, footer = parse_template_lines.run(tpl_text)
+    header, parsed, footer = parse_template_lines(tpl_text)
     for _, name, value in parsed:
         if name and name.strip().lower() in ("acronym", "acr"):
             return value.strip()

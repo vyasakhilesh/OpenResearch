@@ -3,3 +3,5 @@ __pycache__
 .env
 openresearch/
 .vscode
+test.ipynb
+export_env.sh

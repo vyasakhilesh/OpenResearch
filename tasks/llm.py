@@ -81,13 +81,13 @@ def split_template_and_sources(text: str) -> Tuple[Optional[str], List[str]]:
 @task
 def get_event_template(title: str, series_name: str, target_year: int, llm_api_key: str, prompt_template: str) -> Optional[str]:
     prompt = prompt_template.format(TITLE=title, SERIES_NAME=series_name, TARGET_YEAR=target_year)
-    resp_json = call_openrouter_task.run(prompt, llm_api_key)
+    resp_json = call_openrouter_task(prompt, llm_api_key)
     if not resp_json:
         return None
-    text = extract_text_from_response.run(resp_json)
+    text = extract_text_from_response(resp_json)
     if not text:
         return None
-    template, sources = split_template_and_sources.run(text)
+    template, sources = split_template_and_sources(text)
     if template:
         if sources:
             return template + "\n\n" + "\n=== Sources ===\n" + "\n\n".join(sources)
