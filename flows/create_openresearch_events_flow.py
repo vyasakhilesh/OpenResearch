@@ -1,16 +1,17 @@
+from time import time
 from prefect import flow, get_run_logger
 from tasks.mw_auth import login_and_get_csrf
 from tasks.mw_api import (
-    get_event_pages,
+    get_series_titles,
     get_page_wikitext,
-    find_template_block,
-    extract_acronym_from_template,
-    extract_series_strict_two_tokens,
-    set_multiple_params_in_template,
-    edit_page,
+    create_page,
+    page_exists,
 )
-from tasks.llm import get_event_template, fix_and_validate_event_template
-from tasks.utils import filter_rank_series
+from tasks.llm import (
+    get_event_template, 
+    fix_and_validate_event_template
+)
+from tasks.utils import filter_rank_series, extract_event_fields_from_wikitext
 from typing import List, Dict, Optional
 import os
 
@@ -24,7 +25,8 @@ Output requirements::
 Formatting rules:
   - Each template line must be of the form: |Key=Value
   - Acronym must be abbreviation of event, e.g. ICWE 2024
-  - Ordinal is positive integer value
+  - Title is full title of the given event, (e.g. 24th International Conference on Web Engineering)
+  - Ordinal of the event e.g 24 for 24th event
   - Type must be one of Conference, Workshop, Tutorial, Symposium
   - Series must be abbreviation of event series, e.g. ICWE
   - Field must be a primary scientific field of the event
@@ -36,8 +38,8 @@ Formatting rules:
 Produce only the template followed by two blank lines and then the Sources list.
 """
 
-@flow(name="create-events-flow")
-def create_events_flow(
+@flow(name="create-openresearch-events-flow")
+def create_openresearch_events_flow(
     api_url: str,
     username: str,
     password: str,
@@ -48,44 +50,43 @@ def create_events_flow(
     llm_api_key: Optional[str] = None,
 ):
     logger = get_run_logger()
-    csrf_token, session_info = login_and_get_csrf(api_url, username, password)
+    csrf_token, session = login_and_get_csrf(api_url, username, password)
     # 1. collect pages
-    titles = get_event_pages(api_url, session_info)
+    titles = get_series_titles(api_url, session)
     logger.info("Found %s pages", len(titles))
     # 2. filter by ranking
-    candidates = filter_rank_series(titles, core_26_dict, core_23_dict)
-    logger.info("Candidate series needing new edition: %s", len(candidates))
+    filtered_series_list = filter_rank_series(titles, core_26_dict, core_23_dict)
+    logger.info("Candidate series needing new edition: %s", len(filtered_series_list))
     # 3. iterate target years and create pages
     for year in target_years:
-        for s in candidates:
+        for series in filtered_series_list[0:5]:
             # fetch page wikitext and template
-            wikitext = get_page_wikitext(api_url, s, session_info)
-            tpl = find_template_block(wikitext)
-            if not tpl:
-                logger.info("No Event template on %s, skipping", s)
+            page_title = f"{series} {year}"
+            wikitext = get_page_wikitext(api_url, series, session)
+            text_json = extract_event_fields_from_wikitext(wikitext)
+            series_title = text_json.get('Title', None)
+            
+            if page_exists(api_url, page_title, session):
+                logger.info("Event Page %s already exists, skipping", page_title)
                 continue
-            tpl_text, _, _ = tpl
-            acronym = extract_acronym_from_template(tpl_text) or s.split(":")[-1].replace(" ", "_")
-            series = extract_series_strict_two_tokens(acronym)
-            if not series:
-                logger.info("Could not infer series for %s (acronym=%s), skipping", s, acronym)
-                continue
-            # Build params and set in template
-            params_map = {"Series": series}
-            new_wikitext, changed, old_tpl = set_multiple_params_in_template(wikitext, params_map)
-            summary = f"Set Series to {series} (acronym={acronym})"
-            if changed:
-                # Optionally call LLM to generate full Event template for the specific year
+            
+            try:
                 if llm_api_key:
-                    llm_output = get_event_template(s, series, year, llm_api_key, LLM_PROMPT)
+                    llm_output = get_event_template(series_title, series, year, llm_api_key, LLM_PROMPT)
+                    logger.info("LLM output for %s: \n %s", page_title, llm_output)
                     if llm_output:
                         fixed, err = fix_and_validate_event_template(llm_output)
-                        if fixed and not err:
-                            new_wikitext = fixed
-                        else:
-                            logger.info("LLM template validation failed for %s: %s", s, err)
-                res = edit_page(api_url, s, new_wikitext, csrf_token, session_info, summary=summary, dry_run=dry_run)
-                logger.info("Edit result for %s: %s", s, res)
+                        logger.info("LLM template validation for page_title: %s: \n fixed: %s, \n error: %s", page_title, fixed, err)
+                        if err:
+                            logger.error("LLM template validation failed for series: %s: \n error: %s \n llm_output: %s", series, err, llm_output)
+                            continue
+                summary = f"Added upcoming edition for {series} {year} (automated(LLM-assisted) edit)"
+                res = create_page(api_url, page_title, fixed, csrf_token, summary, session, dry_run)
+                logger.info("Create result for page_title %s: result: %s", page_title, res['error']['code'] if res.get('error') else res)
+                # time.sleep(1)
+            except Exception as e:
+                logger.error("Exception for %s: %s", page_title, e)
+                # time.sleep(1)
     return True
 
 if __name__ == "__main__":
@@ -97,8 +98,8 @@ if __name__ == "__main__":
     df_core_26 = pd.read_csv(core_26_path, header=None)
     core_23_dict = dict(zip(df_core_23[2], df_core_23[4]))
     core_26_dict = dict(zip(df_core_26[2], df_core_26[4]))
-    API = os.environ.get("MW_API", "https://www.openresearch.org/mediawiki/api.php")
+    API = os.environ.get("OR_API", "https://www.openresearch.org/mediawiki/api.php")
     USER = os.environ.get("OR_USER")
     PASS = os.environ.get("OR_PASS")
-    TARGET_YEARS = [2021, 2022, 2023, 2024, 2025, 2026]
-    create_events_flow(API, USER, PASS, core_26_dict, core_23_dict, TARGET_YEARS, dry_run=True, llm_api_key=os.environ.get("OPENROUTER_API_KEY"))
+    TARGET_YEARS = [2021, 2022, 2023, 2024, 2025, 2026, 2027]
+    create_openresearch_events_flow(API, USER, PASS, core_26_dict, core_23_dict, TARGET_YEARS, dry_run=False, llm_api_key=os.environ.get("OPENROUTER_API_KEY"))
