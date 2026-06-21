@@ -104,4 +104,7 @@ if __name__ == "__main__":
     USER = os.environ.get("OR_USER")
     PASS = os.environ.get("OR_PASS")
     TARGET_YEARS = [2021, 2022, 2023, 2024, 2025, 2026, 2027]
-    create_openresearch_events_flow(API, USER, PASS, core_26_dict, core_23_dict, TARGET_YEARS, dry_run=False, llm_api_key=os.environ.get("OPENROUTER_API_KEY"))
+    create_openresearch_events_flow(API, USER, PASS, core_26_dict, core_23_dict, 
+                                    TARGET_YEARS, dry_run=False, 
+                                    llm_api_key=os.environ.get("OPENROUTER_API_KEY"))
+    # create_openresearch_events_flow.serve(API, USER, PASS, core_26_dict, core_23_dict, TARGET_YEARS, dry_run=False, llm_api_key=os.environ.get("OPENROUTER_API_KEY"))

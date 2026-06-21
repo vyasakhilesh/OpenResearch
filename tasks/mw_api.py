@@ -55,7 +55,9 @@ def create_page(api_url: str, title: str, content: str, csrf_token: str, summary
 # Edit Page
 @task
 def edit_page(api_url: str, title: str, new_text: str, csrf_token: str, session, summary: str = "Update core ranking", dry_run: bool = True) -> dict:
+    logger = get_run_logger()
     if dry_run:
+        logger.info(f"DRY RUN: would edit {title}")
         return {"result": "dry-run", "title": title, "summary": summary}
     payload = {
         "action": "edit",
@@ -66,6 +68,7 @@ def edit_page(api_url: str, title: str, new_text: str, csrf_token: str, session,
         "summary": summary,
         "bot": True
     }
+    # logger.info(f"Editing page {title} with summary: {summary} and text: {new_text}...")
     r = session.post(api_url, data=payload, timeout=60)
     r.raise_for_status()
     return r.json()
