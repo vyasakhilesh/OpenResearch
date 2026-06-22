@@ -79,8 +79,7 @@ def split_template_and_sources(text: str) -> Tuple[Optional[str], List[str]]:
     return template, sources
 
 @task
-def get_event_template(title: str, series_name: str, target_year: int, llm_api_key: str, prompt_template: str) -> Optional[str]:
-    prompt = prompt_template.format(TITLE=title, SERIES_NAME=series_name, TARGET_YEAR=target_year)
+def get_event_template(llm_api_key: str, prompt: str) -> Optional[str]:
     resp_json = call_openrouter_task(prompt, llm_api_key)
     if not resp_json:
         return None
@@ -98,6 +97,7 @@ def get_event_template(title: str, series_name: str, target_year: int, llm_api_k
             else:
                 return template
     return None
+
 
 @task
 def fix_and_validate_event_template(text: str) -> Tuple[Optional[str], Optional[str]]:

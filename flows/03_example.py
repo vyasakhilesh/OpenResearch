@@ -1,6 +1,6 @@
 # flows/ex_flow.py
 from prefect import flow
-from tasks.aa_ex_task import extract_data
+from tasks.aa_example import extract_data
 from prefect.logging import get_run_logger
 
 @flow(name="example-pipeline")
