@@ -37,7 +37,7 @@ Formatting rules::
    2. Use the exact key names listed above.
 """
 
-def build_fields_extraction_prompt(
+def build_event_fields_extraction_prompt(
     title: str,
     acronym: Optional[str],
     target_year: Optional[int],
@@ -150,7 +150,7 @@ def update_openresearch_events_fields(
                 logger.info(f"{page_title}: [INFO] Missing fields detected, attempting LLM extraction")
                 try:
                     if llm_api_key:
-                        llm_prompt = build_fields_extraction_prompt(
+                        llm_prompt = build_event_fields_extraction_prompt(
                             title=title,
                             acronym=page_title,
                             target_year=year,

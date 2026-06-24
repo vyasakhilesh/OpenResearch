@@ -83,8 +83,8 @@ def delete_page(api_url: str, title: str, csrf_token: str, session):
 
 # get series titles
 @task
-def get_series_titles(api_url: str, session) -> List[str]:
-    params = {"action":"query","list":"categorymembers","cmtitle":"Category:Event series","cmlimit":"max","format":"json"}
+def get_series_titles(api_url: str, session, title:str="Category:Event series") -> List[str]:
+    params = {"action":"query","list":"categorymembers","cmtitle":title,"cmlimit":"max","format":"json"}
     titles = []
     while True:
         r = session.get(api_url, params=params)
