@@ -1,8 +1,10 @@
 from prefect import task, get_run_logger
 import requests
-from typing import Optional, Tuple, List, Dict
+from typing import Optional, Tuple, List, Dict, Any
 import re
 import json
+from tasks.utils import _find_code_fence_content, _extract_balanced_braces, _clean_json_like
+import ast
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/responses"
 
@@ -98,6 +100,54 @@ def get_event_template(llm_api_key: str, prompt: str) -> Optional[str]:
                 return template
     return None
 
+@task
+def get_event_fields(llm_api_key: str, prompt:str) -> Optional[str]:
+    resp_json = call_openrouter_task(prompt, llm_api_key)
+    if not resp_json:
+        return None
+    text = extract_text_from_response(resp_json)
+    if not text:
+        return None
+    parsed_response = extract_json_object_from_llm(text)
+    return parsed_response
+
+@task
+def extract_json_object_from_llm(text: str) -> Optional[Any]:
+    """
+    Attempt to extract and parse a JSON object from an LLM response string.
+    Returns the parsed Python object (usually a dict) or None if parsing fails.
+    """
+    # 1) If there's a code fence, prefer its content
+    candidate = _find_code_fence_content(text)
+    if candidate is None:
+        # 2) Otherwise try to extract the first balanced {...} substring
+        candidate = _extract_balanced_braces(text)
+
+    if not candidate:
+        return None
+
+    candidate = _clean_json_like(candidate)
+
+    # 3) Try json.loads
+    try:
+        return json.loads(candidate)
+    except Exception:
+        pass
+
+    # 4) If json.loads fails, try ast.literal_eval as a fallback (handles Python-style None/True/False and single quotes)
+    try:
+        return ast.literal_eval(candidate)
+    except Exception:
+        pass
+
+    # 5) Last-resort: try to coerce single quotes to double quotes and parse again
+    coerced = candidate.replace("'", '"')
+    try:
+        return json.loads(coerced)
+    except Exception:
+        pass
+
+    return None
 
 @task
 def fix_and_validate_event_template(text: str) -> Tuple[Optional[str], Optional[str]]:

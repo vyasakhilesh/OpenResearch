@@ -2,6 +2,7 @@ from prefect import task, get_run_logger
 import requests
 import re
 from typing import List, Tuple, Optional, Dict
+from typing import Dict, Callable, Any
 
 # Template helpers (kept as tasks so they are testable and visible)
 @task
@@ -94,3 +95,72 @@ def extract_acronym_from_template(tpl_text: str) -> Optional[str]:
     if m:
         return m.group(1).strip()
     return None
+
+
+def _parse_fields_spec(fields_str: str):
+    parts = [p.strip() for p in fields_str.split(',') if p.strip()]
+    specs = []
+    for part in parts:
+        if ':' in part:
+            name, typ = [x.strip() for x in part.split(':', 1)]
+        else:
+            name, typ = part.strip(), 'str'
+        specs.append((name, typ.lower()))
+    return specs
+
+# Default converters by type
+_default_type_converters: Dict[str, Callable[[str], Any]] = {
+    'int': lambda s: int(s.strip()),
+    'float': lambda s: float(s.strip()),
+    'str': lambda s: s.strip(),
+    'bool': lambda s: s.strip().lower() in ('1', 'true', 'yes', 'y'),
+}
+
+def extract_fields_from_template(
+    tpl_text: str,
+    fields: str,
+    *,
+    type_converters: Optional[Dict[str, Callable[[str], Any]]] = None,
+    field_converters: Optional[Dict[str, Callable[[str], Any]]] = None,
+    first_only: bool = True
+) -> Dict[str, Any]:
+
+    specs = _parse_fields_spec(fields)
+    converters_by_type = dict(_default_type_converters)
+    if type_converters:
+        converters_by_type.update(type_converters)
+
+    result: Dict[str, Any] = {}
+
+    for name, typ in specs:
+        # Build a flexible regex for the field name allowing variable whitespace
+        # e.g. "City" or "City Name" -> allow spaces and case-insensitive
+        name_escaped = re.escape(name)
+        name_pattern = re.sub(r'\\\s+', r'\\s*', name_escaped)  # allow flexible whitespace
+        pattern = re.compile(r"\|\s*" + name_pattern + r"\s*=\s*([^|\n\r]+)", flags=re.I)
+
+        if first_only:
+            m = pattern.search(tpl_text)
+            raw_values = [m.group(1).strip()] if m else []
+        else:
+            raw_values = [m.group(1).strip() for m in pattern.finditer(tpl_text)]
+
+        # choose converter: field-specific overrides type-based
+        conv = None
+        if field_converters and name in field_converters:
+            conv = field_converters[name]
+        else:
+            conv = converters_by_type.get(typ, converters_by_type['str'])
+
+        def _convert(raw: str):
+            try:
+                return conv(raw)
+            except Exception:
+                return None
+
+        if first_only:
+            result[name] = _convert(raw_values[0]) if raw_values else None
+        else:
+            result[name] = [_convert(rv) for rv in raw_values] if raw_values else []
+
+    return result

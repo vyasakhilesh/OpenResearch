@@ -4,6 +4,7 @@ import re
 from datetime import datetime, timezone
 import ast
 import json
+from collections.abc import Mapping
 
 @task
 def filter_rank_series(series_list: List[str], core_26_dict: Dict[str, str], core_23_dict: Dict[str, str], rank: List[str] = ['A*', 'A', 'B', 'C']) -> List[str]:
@@ -162,39 +163,33 @@ def _clean_json_like(text: str) -> str:
 
     return text.strip()
 
-def extract_json_object_from_llm(text: str) -> Optional[Any]:
-    """
-    Attempt to extract and parse a JSON object from an LLM response string.
-    Returns the parsed Python object (usually a dict) or None if parsing fails.
-    """
-    # 1) If there's a code fence, prefer its content
-    candidate = _find_code_fence_content(text)
-    if candidate is None:
-        # 2) Otherwise try to extract the first balanced {...} substring
-        candidate = _extract_balanced_braces(text)
 
-    if not candidate:
-        return None
 
-    candidate = _clean_json_like(candidate)
+def update_dict(target, source,
+                   treat_empty_strings=False,
+                   treat_empty_containers=False):
 
-    # 3) Try json.loads
-    try:
-        return json.loads(candidate)
-    except Exception:
-        pass
+    def is_missing(value):
+        if value is None:
+            return True
+        if treat_empty_strings and value == "":
+            return True
+        if treat_empty_containers and (value == [] or value == {}):
+            return True
+        return False
 
-    # 4) If json.loads fails, try ast.literal_eval as a fallback (handles Python-style None/True/False and single quotes)
-    try:
-        return ast.literal_eval(candidate)
-    except Exception:
-        pass
-
-    # 5) Last-resort: try to coerce single quotes to double quotes and parse again
-    coerced = candidate.replace("'", '"')
-    try:
-        return json.loads(coerced)
-    except Exception:
-        pass
-
-    return None
+    for key, src_val in source.items():
+        if key not in target:
+            # key absent in target -> copy entire value
+            target[key] = src_val
+        else:
+            tgt_val = target[key]
+            # If both are dict-like, recurse
+            if isinstance(tgt_val, Mapping) and isinstance(src_val, Mapping):
+                update_dict(tgt_val, src_val,
+                            treat_empty_strings=treat_empty_strings,
+                            treat_empty_containers=treat_empty_containers)
+            else:
+                # If target value is considered missing, replace it
+                if is_missing(tgt_val):
+                    target[key] = src_val
