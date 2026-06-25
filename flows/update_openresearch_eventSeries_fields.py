@@ -16,27 +16,6 @@ import os
 
 PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "DEBUG")
 
-LLM_PROMPT_OLD = """
-Task:: Find the following information (City, State, Country) about event {TITLE} ({ACRONYM}) of year {TARGET_YEAR} with best-known values to fill keys of the event.
-Scope requirements::
-  1. Search the official event website first, then the conference proceedings (publisher pages / DBLP), then community trackers (OpenAccept, CS Conference Stats) to gather information.
-  2. Prefer primary sources (official site, proceedings, DBLP, OpenAccept).
-
-Output requirements::
-  1. Produce exactly one valid JSON object and nothing else.
-  2. The JSON object must contain only the event keys (only those that could be reliably determined):
-     a. "Year": integer or None
-     b. "City": string or None
-     c. "State": string or None
-     d. "Country": string or None
-     e. "Confidence": string, one of "high", "medium", or "low"
-  3. Do not include any other explanatory text, commentary, metadata, surrounding code fences or additional keys before, inside, or after the JSON object.
-
-Formatting rules::
-   1. The JSON object must be valid JSON (use double quotes for keys and string values).
-   2. Use the exact key names listed above.
-"""
-
 def build_eventSeries_fields_extraction_prompt(
     title: str,
     acronym: Optional[str],
