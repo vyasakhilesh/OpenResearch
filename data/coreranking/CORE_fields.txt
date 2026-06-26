@@ -1,0 +1,108 @@
+4601 Applied computing
+460101 Applications in arts and humanities
+460102 Applications in health
+460103 Applications in life sciences
+460104 Applications in physical sciences
+460105 Applications in social sciences and education 
+460106 Spatial data and applications
+4602 Artificial intelligence
+460201 Artificial life and complex adaptive systems
+460202 Autonomous agents and multiagent systems
+460203 Evolutionary computation
+460204 Fuzzy computation
+460205 Intelligent robotics
+460206 Knowledge representation and reasoning
+460207 Modelling and simulation
+460208 Natural language processing
+460209 Planning and decision making
+460210 Satisfiability and optimisation
+460211 Speech production
+460212 Speech recognition
+4603 Computer vision and multimedia computation
+460301 Active sensing
+460302 Audio processing
+460303 Computational imaging
+460304 Computer vision
+460305 Image and video coding
+460306 Image processing
+460307 Multimodal analysis and synthesis
+460308 Pattern recognition
+460309 Video processing
+4604 Cybersecurity and privacy
+460401 Cryptography
+460402 Data and information privacy
+460403 Data security and protection
+460404 Digital forensics
+460405 Hardware security
+460406 Software and application security
+460407 System and network security
+4605 Data management and data science
+460501 Data engineering and data science
+460502 Data mining and knowledge discovery
+460503 Data models, storage and indexing
+460504 Data quality
+460505 Database systems
+460506 Graph, social and multimedia data
+460507 Information extraction and fusion
+460508 Information retrieval and web search
+460509 Query processing and optimisation
+460510 Recommender systems
+460511 Stream and sensor data
+4606 Distributed computing and systems software
+460601 Cloud computing
+460602 Concurrent/parallel systems and technologies
+460603 Cyberphysical systems and internet of things
+460604 Dependable systems
+460605 Distributed systems and algorithms
+460606 Energy-efficient computing
+460607 High performance computing
+460608 Mobile computing
+460609 Networking and communications
+460610 Operating systems
+460611 Performance evaluation
+460612 Service oriented computing
+4607 Graphics, augmented reality and games
+460701 Computer aided design
+460702 Computer graphics
+460703 Entertainment and gaming
+460704 Interactive narrative
+460705 Procedural content generation
+460706 Serious games
+460707 Sound and music computing
+460708 Virtual and mixed reality
+4608 Human-centred computing
+460801 Accessible computing
+460802 Affective computing
+460803 Collaborative and social computing
+460804 Computing education
+460805 Fairness, accountability, transparency, trust and ethics of computer systems
+460806 Human-computer interaction
+460807 Information visualisation
+460808 Mixed initiative and human-in-the-loop
+460809 Pervasive computing
+460810 Social robotics
+4611 Machine learning
+461101 Adversarial machine learning
+461102 Context learning
+461103 Deep learning
+461104 Neural networks
+461105 Reinforcement learning
+461106 Semi- and unsupervised learning
+4612 Software engineering
+461201 Automated software engineering
+461202 Empirical software engineering
+461203 Formal methods for software
+461204 Programming languages
+461205 Requirements engineering
+461206 Software architecture
+461207 Software quality, processes and metrics
+461208 Software testing, verification and validation
+4613 Theory of computation
+461301 Coding, information theory and compression
+461302 Computational complexity and computability
+461303 Computational logic and formal languages
+461304 Concurrency theory
+461305 Data structures and algorithms
+461306 Numerical computation and mathematical software
+461307 Quantum computation
+CSE Computer Systems Engineering
