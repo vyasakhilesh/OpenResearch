@@ -25,6 +25,23 @@ def get_event_pages(api_url: str, session, category_title: str = "Category:Stand
     return titles
 
 @task
+def get_eventSeries_pages(api_url: str, session, category_title: str = "Category:Event series") -> List[str]:
+    params = {"action":"query","list":"categorymembers","cmtitle":category_title, "cmlimit":"max","format":"json"}
+    titles: List[str] = []
+    while True:
+        r = session.get(api_url, params=params, timeout=30)
+        r.raise_for_status()
+        data = r.json()
+        members = data.get("query", {}).get("categorymembers", [])
+        for m in members:
+            titles.append(m["title"])
+        if "continue" in data:
+            params.update(data["continue"])
+        else:
+            break
+    return titles
+
+@task
 def get_page_wikitext(api_url: str, title: str, session) -> str:
     r = session.get(api_url, params={"action":"query","prop":"revisions","rvprop":"content","titles":title,"format":"json"}, timeout=30)
     r.raise_for_status()

@@ -5,6 +5,9 @@ from datetime import datetime, timezone
 import ast
 import json
 from collections.abc import Mapping
+import requests
+from html import unescape
+from typing import Iterable
 
 @task
 def filter_rank_series(series_list: List[str], core_26_dict: Dict[str, str], core_23_dict: Dict[str, str], rank: List[str] = ['A*', 'A', 'B', 'C']) -> List[str]:
@@ -56,7 +59,7 @@ def extract_event_fields_from_wikitext(text: str) -> Dict[str, Optional[str]]:
     # Find the first {{Event ... }} block (non-greedy)
     m = re.search(r"\{\{\s*Event\b(.*?)\}\}", text, re.DOTALL | re.IGNORECASE)
     if not m:
-        return {"Series": None, "Title": None, "Field": None}
+        return {"Series": None, "Title": None, "Field": None, 'Acronym': None}
 
     body = m.group(1)
 
@@ -78,10 +81,7 @@ def extract_event_fields_from_wikitext(text: str) -> Dict[str, Optional[str]]:
     # Extract Title and Field directly
     title = fields.get("title") or None
     field = fields.get("field") or None
-
-    # Series resolution order: explicit Series field, then Acronym inference
-    series = fields.get("series") or None
-    acronym = fields.get("acronym", "") or None
+    acronym = fields.get("acronym") or None
 
     # Normalize empty strings to None
     def _none_if_empty(x):
@@ -89,6 +89,8 @@ def extract_event_fields_from_wikitext(text: str) -> Dict[str, Optional[str]]:
 
     return {
         "Title": _none_if_empty(title),
+        "Acronym": _none_if_empty(acronym),
+        "Field":  _none_if_empty(field)
     }
     
 def _normalize_key(k: str) -> str:
@@ -164,7 +166,7 @@ def _clean_json_like(text: str) -> str:
     return text.strip()
 
 
-
+@task
 def update_dict(target, source,
                    treat_empty_strings=False,
                    treat_empty_containers=False):
