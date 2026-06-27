@@ -8,6 +8,7 @@ from tasks.mw_api import (
     get_eventSeries_pages,
     create_page,
     edit_page,
+    delete_page,
 )
 
 from tasks.mw_helper import find_template_block, set_multiple_params_in_template, extract_fields_from_template
@@ -97,79 +98,57 @@ def clean_openresearch_eventSeries(
         logger.debug(f"""Series Page {page_title}: Json: {series_json} series_wikitext: {series_wikitext}""")
         series_title = series_json.get('Title', None)
         series_acronym = series_json.get('Acronym', None)
-        if series_acronym is not None:
-            if series_acronym.strip().lower() != page_title.strip().lower():
-                logger.warning(f"series_title: {series_acronym} is not equal to page_title: {page_title}")
-                # delete page and recreate page with correct acronym
-                logger.info(f"Deleting page {page_title} and recreating with correct acronym {series_acronym}")
-                # delete_page(api_url, page_title, csrf_token, session)
-        # if series acronym and title match with ICORE acronym and title, then use the ICORE data to fill in missing fields
-        """
-        tpl = find_template_block(series_wikitext, template_name)
-        if not tpl:
-            logger.info(f"{page_title}: [SKIP] No {template_name} template")
-            continue
-        
-        tpl_text, _, _ = tpl
-        """
-        
-        """
-        if None in extracted_fields.values():
-            logger.info(f"{page_title}: [INFO] Missing fields detected, attempting LLM extraction")
-            try:
-                if llm_api_key:
-                    llm_prompt = build_event_fields_extraction_prompt(
-                        title=title,
-                        acronym=page_title,
-                        target_year=year,
-                        fields=fields
-                    )
-                    logger.debug("LLM prompt for %s (%s): \n %s", title, page_title, llm_prompt)
-                    parsed_response = get_event_fields(llm_api_key, llm_prompt)
-                    logger.debug("LLM output for %s (%s): \n %s", title, page_title, parsed_response)
-                    if parsed_response:
-                        update_dict(extracted_fields, parsed_response)
-                        logger.debug("Updated fields after LLM extraction for %s (%s): \n %s", title, page_title, extracted_fields)
-                        parameter_to_set = {k:v for k, v in extracted_fields.items() if v is not None and k!="Sources" and k!="Confidence"}
-                        new_wikitext, changed, old_tpl = set_multiple_params_in_template(event_wikitext, parameter_to_set, template_name)
-                        # Append Confidence and Sources after new_wikitext for provenance
-                        if extracted_fields.get("Sources") and extracted_fields.get("Confidence"):
-                            sources_list = extracted_fields['Sources']
-                            if isinstance(sources_list, list):
-                                sources_str = ", ".join(sources_list)
-                                new_wikitext += f"\n\n\n=== Sources (Confidence: {extracted_fields['Confidence']}) ===\n"
-                                for source in sources_list:
-                                    new_wikitext += f"* {source}\n"
-                        if not changed:
-                            logger.info(f"[UNCHANGED] {title} already has desired params.")
-                            continue
-                        summary = f"Set {parameter_to_set} (acronym={title})"
-                        logger.debug(f"New wikitext for {title}:\n{new_wikitext}")
-                        logger.info(f"Editing page {title} with text: {new_wikitext}")
-                        res = edit_page(api_url, page_title, new_wikitext, csrf_token, session, summary, dry_run)
-                        logger.info("Edit result for title %s: result: %s", title, res['error']['code'] if res.get('error') else res)
-                        if res.get('error'):
-                            logger.error("Edit result for title %s: result: %s", title, res['error']['code'])
-            except Exception as e:
-                logger.error("Exception for %s: %s", page_title, e)
-                # time.sleep(1)"""
+        try:
+            if series_acronym.lower() in df_core_26_details['Acronym'].str.lower().values:
+                # extract the corresponding row from df_core_26_details
+                row = df_core_26_details[df_core_26_details['Acronym'].str.lower() == series_acronym.lower()].iloc[0]
+                # extract the fields from the row
+                logger.debug(f"Found matching row in CORE_26_details for acronym {series_acronym}: {row}")
+                title = row['Title']
+                acronym = row['Acronym']
+                field = row['Field']
+                DblpSeries = row['DblpSeries']
+                has_CORE2026_Rank = row['has CORE2026 Rank']
+                parameter_to_set = {"Acronym": acronym, "Field": field, "Title": title, "DblpSeries": DblpSeries, "has CORE2026 Rank": has_CORE2026_Rank}
+                new_wikitext, changed, old_tpl = set_multiple_params_in_template(series_wikitext, parameter_to_set, template_name, False)
+                if series_acronym.strip() != page_title.strip():
+                    logger.warning(f"series_title: {series_acronym} is not equal to page_title: {page_title}")
+                    # delete page and recreate page with correct acronym
+                    logger.info(f"Deleting page {page_title} and recreating with correct acronym {series_acronym}")
+                    # delete_page(api_url, page_title, csrf_token, session)
+                    # create page with new updated parameters
+                    logger.info(f"Creating page {series_acronym} with wikitext: {new_wikitext}")
+                    #create_page(api_url, acronym, new_wikitext, csrf_token, f"Create page with updated parameters{parameter_to_set}", session, dry_run)
+                else:
+                    # edit page with new updated parameters
+                    logger.info(f"Editing page {series_acronym} with wikitext: {new_wikitext}")
+                    # edit_page(api_url, series_acronym, new_wikitext, csrf_token, session, f"Edit page with updated parameters{parameter_to_set}", dry_run)
+        except Exception as e:
+            logger.error(f"Error processing series {series_title} with acronym {series_acronym}: {e}")
     return True
 
 if __name__ == "__main__":
     # Example invocation using environment variables and local CSVs for core dicts
     import pandas as pd
-    core_23_path = os.environ.get("CORE_23_PATH", "CORE_23.csv")
-    core_26_path = os.environ.get("CORE_26_PATH", "CORE_26.csv")
+    import numpy as np
+    core_23_path = os.environ.get("CORE_23_PATH", "CORE_2023.csv")
+    core_26_path = os.environ.get("CORE_26_PATH", "CORE_2026.csv")
     df_core_23 = pd.read_csv(core_23_path, header=None)
     df_core_26 = pd.read_csv(core_26_path, header=None)
     # core_23_dict = dict(zip(df_core_23[2], df_core_23[4]))
     # core_26_dict = dict(zip(df_core_26[2], df_core_26[4]))
-    df_core_26_details = create_icore_conference_details_data(core_26_path)
+    # file: core_26_path.replace('.csv', '_details.csv') exists, if not, create it using create_icore_conference_details_data
+    details_path = core_26_path.replace('.csv', '_details.csv')
+    if not os.path.exists(details_path):
+        df_core_26_details = create_icore_conference_details_data(core_26_path)
+    else:
+        df_core_26_details = pd.read_csv(details_path)
     API = os.environ.get("OR_API", "https://www.openresearch.org/mediawiki/api.php")
     USER = os.environ.get("OR_USER")
     PASS = os.environ.get("OR_PASS")
-    clean_openresearch_eventSeries(API, USER, PASS, 
-                                      df_core_23, 
+    df_core_26_details = df_core_26_details.replace(np.nan, '', regex=True)  # Replace NaN with empty string
+    clean_openresearch_eventSeries(API, USER, PASS,
+                                      df_core_23,
                                       df_core_26,
                                       df_core_26_details,
                                       dry_run=False,

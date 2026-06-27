@@ -158,8 +158,8 @@ def update_openresearch_events_fields(
 if __name__ == "__main__":
     # Example invocation using environment variables and local CSVs for core dicts
     import pandas as pd
-    core_23_path = os.environ.get("CORE_23_PATH", "CORE_23.csv")
-    core_26_path = os.environ.get("CORE_26_PATH", "CORE_26.csv")
+    core_23_path = os.environ.get("CORE_23_PATH", "CORE_2023.csv")
+    core_26_path = os.environ.get("CORE_26_PATH", "CORE_2026.csv")
     df_core_23 = pd.read_csv(core_23_path, header=None)
     df_core_26 = pd.read_csv(core_26_path, header=None)
     # core_23_dict = dict(zip(df_core_23[2], df_core_23[4]))

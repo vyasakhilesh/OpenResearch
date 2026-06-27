@@ -58,7 +58,17 @@ def extract_core_conference_details(url: str, source:str="Source: ICORE2026") ->
 
     rows = _extract_rows(html)
     acronym = _value_after_prefix(rows, "Acronym:")
-    dblp_source = _value_after_prefix(rows, "DBLP Source:").replace("https://dblp.uni-trier.de/db/conf/", '')
+    dblp_source = _value_after_prefix(rows, "DBLP Source:")\
+                  .replace("https://dblp.uni-trier.de/db/conf/", '')\
+                  .replace("https://dblp.org/db/conf/", '')\
+                  .replace("http://dblp.uni-trier.de/db/conf/", '')\
+                  .replace("http://dblp.org/db/conf/", '')\
+                  .replace("https://dblp.uni-trier.de/db/journals/", '')\
+                  .replace("https://dblp.org/db/journals/", '')\
+                  .replace("http://dblp.uni-trier.de/db/journals/", '')\
+                  .replace("http://dblp.org/db/journals/", '')\
+                  .replace("/index.html", '')
+                
 
     icore_rank = ""
     icore_field_1 = ""
@@ -87,18 +97,18 @@ def extract_core_conference_details(url: str, source:str="Source: ICORE2026") ->
 
 
     return {
-        "title":titles[1],
-        "acronym":acronym,
-        "dblp_source":dblp_source,
-        "rank":icore_rank,
-        "field_of_research":f"{icore_field_1}, {icore_field_2}, {icore_field_3}",
+        "Title":titles[1],
+        "Acronym":acronym,
+        "DblpSeries":dblp_source,
+        "Rank":icore_rank,
+        "Field":f"{icore_field_1}, {icore_field_2}, {icore_field_3}",
         "field_of_research_1":icore_field_1,
         "field_of_research_2":icore_field_2,
         "field_of_research_3":icore_field_3
     }
 
 @task(name="create-icore-conference-details", description="create a dict with conference details from ICORE2026 page and return it")
-def create_icore_conference_details_data(core_26_path: str, source: str = "Source: ICORE2026") -> pd.DataFrame:
+def create_icore_conference_details_data(core_path: str, source: str = "Source: ICORE2026") -> pd.DataFrame:
     """
     Create a dataframe with conference details from ICORE2026 page and return it
     """
@@ -106,9 +116,9 @@ def create_icore_conference_details_data(core_26_path: str, source: str = "Sourc
     logger.setLevel(PREFECT_LOGGING_LEVEL)
     details = []
     failed_urls = []
-    df_core = pd.read_csv(core_26_path, header=None)
+    df_core = pd.read_csv(core_path, header=None)
     urls = df_core[0].apply(lambda url_value : "https://portal.core.edu.au/conf-ranks/"+ str(url_value)).tolist()  # Assuming the first column contains the URLs
-    logger.info(f"Extracting conference details from {len(urls)}, {urls[0:5]} URLs in {core_26_path}")
+    logger.info(f"Extracting conference details from {len(urls)}, {urls[0:5]} URLs in {core_path}")
 
     for url in urls:
         try:
@@ -132,11 +142,11 @@ def create_icore_conference_details_data(core_26_path: str, source: str = "Sourc
                 logger.error(f"Retry failed for URL {url}: {e}")
     logger.warning(f"Finally Failed to process {len(failed_urls)} URLs.")
     df = pd.DataFrame(details)
-    if not df.empty and "acronym" in df.columns:
-        df.drop_duplicates(subset=["acronym"], inplace=True)
+    if not df.empty and "Acronym" in df.columns:
+        df.drop_duplicates(subset=["Acronym"], inplace=True)
     df.reset_index(drop=True, inplace=True)
-    df.to_csv(core_26_path.replace(".csv", "_details.csv"), index=False)
+    df.to_csv(core_path.replace(".csv", "_details.csv"), index=False)
     logger.info(f"Created conference details dataframe with {len(df)} unique entries from {len(urls)} URLs.")
     logger.debug(f"Sample of the dataframe:\n{df.head()}")
-    logger.info(f"Saved conference details to {core_26_path.replace('.csv', '_details.csv')}")
+    logger.info(f"Saved conference details to {core_path.replace('.csv', '_details.csv')}")
     return df

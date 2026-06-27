@@ -160,8 +160,8 @@ def set_multiple_params_in_template(wikitext, params_to_set):
     return new_wikitext, changed, tpl_text
 
 # Load CSVs and build mapping: column 2 -> column 4
-core_23_path = '/content/drive/MyDrive/Work/MediaWiki/CORE_23.csv'
-core_26_path = '/content/drive/MyDrive/Work/MediaWiki/CORE_26.csv'
+core_23_path = '/content/drive/MyDrive/Work/MediaWiki/CORE_2023.csv'
+core_26_path = '/content/drive/MyDrive/Work/MediaWiki/CORE_2026.csv'
 df_core_23 = pd.read_csv(core_23_path, header=None, dtype=str)
 df_core_26 = pd.read_csv(core_26_path, header=None, dtype=str)
 core_23_dict = dict(zip(df_core_23[2].str.strip(), df_core_23[4].str.strip()))

@@ -41,8 +41,8 @@ session.mount("http://", adapter)
 
 # Get Core Ranking Data
 # Define file paths
-core_23_path = '/content/drive/MyDrive/Work/MediaWiki/CORE_23.csv'
-core_26_path = '/content/drive/MyDrive/Work/MediaWiki/CORE_26.csv'
+core_23_path = '/content/drive/MyDrive/Work/MediaWiki/CORE_2023.csv'
+core_26_path = '/content/drive/MyDrive/Work/MediaWiki/CORE_2026.csv'
 
 # Load the datasets
 df_core_23 = pd.read_csv(core_23_path, header=None)
