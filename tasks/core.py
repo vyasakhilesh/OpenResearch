@@ -74,15 +74,15 @@ def extract_core_conference_details(url: str, source:str="Source: ICORE2026") ->
                 if not icore_field_1 and next_row.startswith("Field Of Research:"):
                     icore_field_1 = re.sub(r'^\s*\d+\s*-\s*', '', next_row.removeprefix("Field Of Research:").strip()\
                                   .replace(" ( h-index )", '')\
-                                  .replace(" ( citation )", ''))
+                                  .replace(" ( citation )", '')).strip()
                 elif not icore_field_2 and next_row.startswith("Field Of Research:"):
                     icore_field_2 = re.sub(r'^\s*\d+\s*-\s*', '', next_row.removeprefix("Field Of Research:").strip()\
                                   .replace(" ( h-index )", '')\
-                                  .replace(" ( citation )", ''))
+                                  .replace(" ( citation )", '')).strip()
                 elif not icore_field_3 and next_row.startswith("Field Of Research:"):
                     icore_field_3 = re.sub(r'^\s*\d+\s*-\s*', '', next_row.removeprefix("Field Of Research:").strip()\
                                   .replace(" ( h-index )", '')\
-                                  .replace(" ( citation )", ''))
+                                  .replace(" ( citation )", '')).strip()
             break
 
 
@@ -91,6 +91,7 @@ def extract_core_conference_details(url: str, source:str="Source: ICORE2026") ->
         "acronym":acronym,
         "dblp_source":dblp_source,
         "rank":icore_rank,
+        "field_of_research":f"{icore_field_1}, {icore_field_2}, {icore_field_3}",
         "field_of_research_1":icore_field_1,
         "field_of_research_2":icore_field_2,
         "field_of_research_3":icore_field_3
