@@ -27,7 +27,7 @@ SESSION.mount("http://", HTTP_ADAPTER)
 SESSION.mount("https://", HTTP_ADAPTER)
 SESSION.headers.update({"User-Agent": "OpenResearchBot/1.0"})
 
-def extract_core_conference_details(url: str, source:str="Source: ICORE2026") -> dict[str, str]:
+def extract_core_conference_details(url: str, source:str="Source: ICORE2026", rank: str = "has CORE2026 Rank") -> dict[str, str]:
     ROW_PATTERN = re.compile(r'<div class="row [^"]+">(.*?)</div>', re.DOTALL | re.IGNORECASE)
     TITLE_PATTERN = re.compile(r'<h2>(.*?)</h2>', re.DOTALL | re.IGNORECASE)
     TAG_PATTERN = re.compile(r'<[^>]+>')
@@ -100,7 +100,7 @@ def extract_core_conference_details(url: str, source:str="Source: ICORE2026") ->
         "Title":titles[1],
         "Acronym":acronym,
         "DblpSeries":dblp_source,
-        "Rank":icore_rank,
+         rank :icore_rank,
         "Field":f"{icore_field_1}, {icore_field_2}, {icore_field_3}",
         "field_of_research_1":icore_field_1,
         "field_of_research_2":icore_field_2,
@@ -108,7 +108,7 @@ def extract_core_conference_details(url: str, source:str="Source: ICORE2026") ->
     }
 
 @task(name="create-icore-conference-details", description="create a dict with conference details from ICORE2026 page and return it")
-def create_icore_conference_details_data(core_path: str, source: str = "Source: ICORE2026") -> pd.DataFrame:
+def create_icore_conference_details_data(core_path: str, source: str = "Source: ICORE2026", rank: str = "has CORE2026 Rank") -> pd.DataFrame:
     """
     Create a dataframe with conference details from ICORE2026 page and return it
     """
@@ -122,7 +122,7 @@ def create_icore_conference_details_data(core_path: str, source: str = "Source: 
 
     for url in urls:
         try:
-            detail = extract_core_conference_details(url, source)
+            detail = extract_core_conference_details(url, source, rank)
             details.append(detail)
             logger.debug(f"Detail: {detail}")
         except Exception as e:
@@ -134,7 +134,7 @@ def create_icore_conference_details_data(core_path: str, source: str = "Source: 
         logger.warning(f"Failed to process {len(failed_urls)} URLs.")
         for url in failed_urls:
             try:
-                detail = extract_core_conference_details(url, source)
+                detail = extract_core_conference_details(url, source, rank)
                 details.append(detail)
                 logger.debug(f"Detail: {detail}")
                 failed_urls.remove(url)  # Remove from failed_urls if successful
