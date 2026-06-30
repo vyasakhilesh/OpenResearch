@@ -100,7 +100,7 @@ if __name__ == "__main__":
     # Example invocation using environment variables and local CSVs for core dicts
     import pandas as pd
     
-    years = ["2013", "2014", "2017", "2018", "2020", "2021", "2023", "2026"]
+    years = ["2008", "2010", "2013", "2014", "2017", "2018", "2020", "2021", "2023", "2026"]
     
     def get_df_core_rankings_dict(year: str) -> Dict[str, str]:
         path = os.environ.get(f"CORE_{year}_PATH", f"CORE_{year}.csv")
