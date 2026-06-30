@@ -7,8 +7,10 @@ from urllib3.util.retry import Retry
 import pandas as pd
 from prefect import task, get_run_logger
 import os
+import numpy as np
 
-PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "DEBUG")
+# PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "DEBUG")
+PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "INFO")
 
 RETRY_STRATEGY = Retry(
     total=5,
@@ -145,6 +147,7 @@ def create_icore_conference_details_data(core_path: str, source: str = "Source: 
     if not df.empty and "Acronym" in df.columns:
         df.drop_duplicates(subset=["Acronym"], inplace=True)
     df.reset_index(drop=True, inplace=True)
+    df.replace(np.nan, '', regex=True, inplace=True)  # Replace NaN with empty string
     df.to_csv(core_path.replace(".csv", "_details.csv"), index=False)
     logger.info(f"Created conference details dataframe with {len(df)} unique entries from {len(urls)} URLs.")
     logger.debug(f"Sample of the dataframe:\n{df.head()}")
