@@ -3,6 +3,7 @@ from tasks.core import create_icore_conference_details_data
 import os
 import pandas as pd
 import numpy as np
+import re
 
 # PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "DEBUG")
 PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "INFO")
@@ -66,6 +67,16 @@ def create_core_data(years: list = ["2026"]):
                   .reset_index()
     # Optional: convert NaN back to empty strings
     merged = merged.fillna("")
+    
+    # Clean field string
+    def strip_trailing_marker(value):
+        text = str(value).strip()
+        text = re.sub(r"[†‡]\s*(?:,\s*)*$", "", text)
+        text = re.sub(r"(?:,\s*)+$", "", text)
+        text = text.strip()
+        return text
+    
+    merged["Field"] = merged["Field"].apply(strip_trailing_marker)
     merged.to_csv("./data/coreranking/CORE_all_details.csv", index=False)
     logger.info(f"Merged core data saved to ./data/coreranking/CORE_all_details.csv with {len(merged)} unique entries.")
     return True
