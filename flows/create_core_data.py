@@ -67,6 +67,7 @@ def create_core_data(years: list = ["2026"]):
     # Optional: convert NaN back to empty strings
     merged = merged.fillna("")
     merged.to_csv("./data/coreranking/CORE_all_details.csv", index=False)
+    logger.info(f"Merged core data saved to ./data/coreranking/CORE_all_details.csv with {len(merged)} unique entries.")
     return True
     
 if __name__ == "__main__":
