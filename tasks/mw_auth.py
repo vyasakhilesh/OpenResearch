@@ -32,4 +32,5 @@ def login_and_get_csrf(api_url: str, username: str, password: str) -> Tuple[str,
     r = session.get(api_url, params={"action":"query","meta":"tokens","format":"json"}, timeout=30)
     r.raise_for_status()
     csrf = r.json()["query"]["tokens"]["csrftoken"]
+    logger.info("Successfully logged in and obtained CSRF token.")
     return csrf, session
