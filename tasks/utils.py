@@ -221,7 +221,7 @@ def normalize_string(s: Optional[str]) -> Optional[str]:
 
 # calculate the similarity between two strings using normalized Levenshtein distance
 @task
-def string_similarity(s1: Optional[str], s2: Optional[str]) -> float:
+def string_similarity_levenshtein(s1: Optional[str], s2: Optional[str]) -> float:
     if s1 is None or s2 is None:
         return 0.0
     s1 = normalize_string(s1)
