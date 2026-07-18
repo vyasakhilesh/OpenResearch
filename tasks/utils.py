@@ -8,6 +8,8 @@ from collections.abc import Mapping
 import requests
 from html import unescape
 from typing import Iterable
+import Levenshtein
+from rapidfuzz import fuzz
 
 @task
 def filter_rank_series(series_list: List[str], core_26_dict: Dict[str, str], core_23_dict: Dict[str, str], rank: List[str] = ['A*', 'A', 'B', 'C']) -> List[str]:
@@ -195,3 +197,52 @@ def update_dict(target, source,
                 # If target value is considered missing, replace it
                 if is_missing(tgt_val):
                     target[key] = src_val
+                    
+# normalize string lowercase, remove stop words strip punctuation, whitespace, and replace multiple spaces with single space
+@task
+def normalize_string(s: Optional[str]) -> Optional[str]:
+    if s is None:
+        return None
+    s = s.lower()
+    # remove punctuation
+    s = re.sub(r'[^\w\s]', '', s)
+    # remove stop words
+    stop_words = set([
+        "the", "and", "of", "in", "on", "for", "with", "to", "a", "an",
+        "at", "by", "from", "is", "are", "as", "that", "this", "these",
+        "those", "it", "its", "be", "was", "were"
+    ])
+    tokens = s.split()
+    tokens = [t for t in tokens if t not in stop_words]
+    s = ' '.join(tokens)
+    # replace multiple spaces with single space
+    s = re.sub(r'\s+', ' ', s)
+    return s.strip()
+
+# calculate the similarity between two strings using normalized Levenshtein distance
+@task
+def string_similarity(s1: Optional[str], s2: Optional[str]) -> float:
+    if s1 is None or s2 is None:
+        return 0.0
+    s1 = normalize_string(s1)
+    s2 = normalize_string(s2)
+    if not s1 or not s2:
+        return 0.0
+    # calculate Levenshtein distance
+    distance = Levenshtein.distance(s1, s2)
+    max_len = max(len(s1), len(s2))
+    similarity = 1 - (distance / max_len)
+    return similarity
+
+# calculate the similarity between two strings using normalized rapidfuzz ratio
+@task
+def string_similarity_rapidfuzz(s1: Optional[str], s2: Optional[str]) -> float:
+    if s1 is None or s2 is None:
+        return 0.0
+    s1 = normalize_string(s1)
+    s2 = normalize_string(s2)
+    if not s1 or not s2:
+        return 0.0
+    # calculate rapidfuzz ratio
+    similarity = fuzz.ratio(s1, s2) / 100.0
+    return similarity
