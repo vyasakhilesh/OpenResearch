@@ -1,4 +1,4 @@
-from prefect import flow, get_run_logger, task
+from prefect import get_run_logger, task
 from tasks.mw_auth import login_and_get_csrf
 from tasks.mw_api import (
     get_series_titles,
@@ -35,7 +35,7 @@ def preprocessing_core_openresearch_eventSeries(
     csrf_token, session = login_and_get_csrf(api_url, username, password)
     
     # 1. collect pages
-    page_titles = get_series_titles(api_url, session, title="Category:Event series")
+    page_titles = get_series_titles(api_url, session, title=f"Category:{template_name}")
     series_acronyms = []
     logger.info(f"Found {len(page_titles)} pages, e.g., {page_titles[0:50]}")
     # 3. iterate series and create pages
@@ -111,7 +111,7 @@ def create_core_openresearch_eventSeries(
     csrf_token, session = login_and_get_csrf(api_url, username, password)
     
     # 1. collect pages
-    page_titles = get_series_titles(api_url, session, title="Category:Event series")
+    page_titles = get_series_titles(api_url, session, title=f"Category:{template_name}")
     series_acronyms = []
     logger.info(f"Found {len(page_titles)} pages, e.g., {page_titles[0:50]}")
     # 3. iterate series and create pages
