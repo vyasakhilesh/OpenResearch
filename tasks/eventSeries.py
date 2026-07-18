@@ -49,7 +49,13 @@ def preprocessing_core_openresearch_eventSeries(
             if series_acronym is None:
                 logger.warning(f"Series {series_title} has no acronym")
                 series_acronym = page_title  # default to page_title if Acronym not found
+                # edit page to add the acronym parameter with the page_title as value
+                new_wikitext, changed, old_tpl = set_multiple_params_in_template(series_wikitext, {"Acronym": series_acronym}, template_name, False)
+                logger.debug(f"Editing page {series_acronym} to add Acronym parameter with value {series_acronym}")
+                edit_page(api_url, series_acronym, new_wikitext, csrf_token, session, f"Edit page to add Acronym parameter with value {series_acronym}", dry_run)
+            
             series_acronyms.append(series_acronym)
+            
             if series_acronym.lower() in df_core_all_details['Acronym'].str.lower().values:
                 # extract the corresponding row from df_core_all_details
                 row = df_core_all_details[df_core_all_details['Acronym'].str.lower() == series_acronym.lower()].iloc[0]
@@ -74,19 +80,22 @@ def preprocessing_core_openresearch_eventSeries(
                 parameter_to_set = {k: v for k, v in parameter_to_set.items() if v != ''}
                 
                 new_wikitext, changed, old_tpl = set_multiple_params_in_template(series_wikitext, parameter_to_set, template_name, False)
-                if series_acronym.strip() != page_title.strip():
-                    logger.warning(f"series_title: {series_acronym} is not equal to page_title: {page_title}")
+                if acronym.strip() != page_title.strip():
+                    logger.warning(f"series_title: {acronym} is not equal to page_title: {page_title}")
                     # delete page and recreate page with correct acronym
-                    # logger.debug(f"Deleting page {page_title} and recreating with correct acronym {series_acronym}")
-                    # TODO: Uncomment the following line to enable deletion of the old page. Be cautious with this operation.
-                    # delete_page(api_url, page_title, csrf_token, session)
+                    # logger.debug(f"Deleting page {page_title} and recreating with correct acronym {acronym}")
+                    delete_page(api_url, page_title, csrf_token, session)
                     # create page with new updated parameters
-                    logger.debug(f"Creating page {series_acronym} with wikitext: {new_wikitext}")
-                    create_page(api_url, acronym, new_wikitext, csrf_token, f"Create page with updated parameters{parameter_to_set}", session, dry_run)
+                    logger.debug(f"Creating page {acronym} with wikitext: {new_wikitext}")
+                    # if create_page fails, log the error and edit the page with new updated parameters
+                    res = create_page(api_url, acronym, new_wikitext, csrf_token, f"Create page with updated parameters{parameter_to_set}", session, dry_run)
+                    if res.get('error'):
+                        logger.error("Create result for page_title %s: result: %s", page_title, res['error']['code'])
+                        edit_page(api_url, acronym, new_wikitext, csrf_token, session, f"Edit page with updated parameters{parameter_to_set}", dry_run)
                 else:
                     # edit page with new updated parameters
-                    logger.debug(f"Editing page {series_acronym} with wikitext: {new_wikitext}")
-                    edit_page(api_url, series_acronym, new_wikitext, csrf_token, session, f"Edit page with updated parameters{parameter_to_set}", dry_run)
+                    logger.debug(f"Editing page {acronym} with wikitext: {new_wikitext}")
+                    edit_page(api_url, acronym, new_wikitext, csrf_token, session, f"Edit page with updated parameters{parameter_to_set}", dry_run)
         except Exception as e:
             logger.error(f"Error processing page {page_title} series {series_title} with acronym {series_acronym}: {e}")
                 
