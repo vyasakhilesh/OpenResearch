@@ -15,7 +15,7 @@ from tasks.utils import filter_rank_series, extract_event_fields_from_wikitext
 from typing import List, Dict, Optional
 import os
 
-PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "DEBUG")
+PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "INFO")
 
 def build_create_event_prompt(
     series_title: str,
@@ -30,6 +30,7 @@ Output requirements::
   1. Produce the filled template exactly in wiki key format starting with two opening curly braces "{{Event" and ending with two closing curly braces "}}".
   2. Immediately after the closing "}}", on a new line, include a "Sources:" section that lists one evidence URL per line. The "Sources:" section must be separated from the template by two blank lines.
   3. Do not include any other text, explanation, or commentary.
+  4. If a key's value is unknown or cannot be reliably determined with full confidence, remove that key entirely from the template.
 Formatting rules:
   - Each template line must be of the form: |Key=Value
   - Acronym must be abbreviation of event, e.g. ICWE 2024
@@ -40,7 +41,7 @@ Formatting rules:
   - Field must be a primary scientific field of the event
   - Dates keys (Start date, End date, Submission deadline, Abstract deadline, Notification, Camera ready) must use YYYY/MM/DD format.
   - Keys (Has host organization, has general chair, has program chair) must be names of organizations or persons.
-  - Keys (Submitted papers, Accepted papers, Accepted short papers) must be positive integer.
+  - Keys (Submitted papers, Accepted papers, Accepted short papers) must be positive integer and cannot be zero or unknown. Ignore them for future or upcoming events. 
   - If value of key is unknown or cannot be reliably determined with full confidence then remove that key entirely.
   - Prefer primary sources (official site, proceedings, DBLP, OpenAccept) and include those URLs in the Sources list.
 Produce only the template followed by two blank lines and then the Sources list.
@@ -69,7 +70,8 @@ def create_openresearch_events(
     logger.info("Candidate series needing new edition: %s", len(filtered_series_list))
     # 3. iterate target years and create pages
     for year in target_years:
-        for series in filtered_series_list[0:5]:
+        for idx, series in enumerate(filtered_series_list):
+            logger.info("Processing series %s (%d/%d) for year %d", series, idx, len(filtered_series_list), year)
             # fetch page wikitext and template
             page_title = f"{series} {year}"
             wikitext = get_page_wikitext(api_url, series, session)
@@ -91,12 +93,12 @@ def create_openresearch_events(
                         if err:
                             logger.error("LLM template validation failed for series: %s: \n error: %s \n llm_output: %s", series, err, llm_output)
                             continue
-                summary = f"Added upcoming edition for {series} {year} (automated(LLM-assisted) edit)"
-                res = create_page(api_url, page_title, fixed, csrf_token, summary, session, dry_run)
-                logger.info("Create result for page_title %s: result: %s", page_title, res['error']['code'] if res.get('error') else res)
-                if res.get('error'):
-                    logger.error("Create result for page_title %s: result: %s", page_title, res['error']['code'])
-                # time.sleep(1)
+                        summary = f"Added upcoming edition for {series} {year} (automated(LLM-assisted) edit)"
+                        res = create_page(api_url, page_title, fixed, csrf_token, summary, session, dry_run)
+                        logger.info("Create result for page_title %s: result: %s", page_title, res['error']['code'] if res.get('error') else res)
+                        if res.get('error'):
+                            logger.error("Create result for page_title %s: result: %s", page_title, res['error']['code'])
+                        # time.sleep(1)
             except Exception as e:
                 logger.error("Exception for %s: %s", page_title, e)
                 # time.sleep(1)
@@ -105,8 +107,8 @@ def create_openresearch_events(
 if __name__ == "__main__":
     # Example invocation using environment variables and local CSVs for core dicts
     import pandas as pd
-    core_23_path = os.environ.get("CORE_23_PATH", "CORE_2023.csv")
-    core_26_path = os.environ.get("CORE_26_PATH", "CORE_2026.csv")
+    core_23_path = os.environ.get("CORE_2023_PATH", "CORE_2023.csv")
+    core_26_path = os.environ.get("CORE_2026_PATH", "CORE_2026.csv")
     df_core_23 = pd.read_csv(core_23_path, header=None)
     df_core_26 = pd.read_csv(core_26_path, header=None)
     core_23_dict = dict(zip(df_core_23[2], df_core_23[4]))
@@ -114,7 +116,8 @@ if __name__ == "__main__":
     API = os.environ.get("OR_API", "https://www.openresearch.org/mediawiki/api.php")
     USER = os.environ.get("OR_USER")
     PASS = os.environ.get("OR_PASS")
-    TARGET_YEARS = [2021, 2022, 2023, 2024, 2025, 2026, 2027]
+    # TODO : Add a way to specify target years via environment variable or command line argument
+    TARGET_YEARS = [2027]
     create_openresearch_events(API, USER, PASS, core_26_dict, core_23_dict, 
                                     TARGET_YEARS, dry_run=False, 
                                     llm_api_key=os.environ.get("OPENROUTER_API_KEY"))
