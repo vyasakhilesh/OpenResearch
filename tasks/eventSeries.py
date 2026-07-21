@@ -40,6 +40,7 @@ def preprocessing_core_openresearch_eventSeries(
     logger.info(f"Found {len(page_titles)} pages, e.g., {page_titles[0:50]}")
     # 3. iterate series and create pages
     for page_title in page_titles:  # limit to first 10 for testing
+        logger.info(f"Processing page {page_title}")
         try:
             series_wikitext = get_page_wikitext(api_url, page_title, session)
             series_json = extract_event_fields_from_wikitext(series_wikitext)
@@ -58,7 +59,7 @@ def preprocessing_core_openresearch_eventSeries(
             
             if series_acronym.lower() in df_core_all_details['Acronym'].str.lower().values:
                 # extract the corresponding row from df_core_all_details
-                row = df_core_all_details[df_core_all_details['Acronym'].str.lower() == series_acronym.lower()].iloc[0]
+                row = df_core_all_details[df_core_all_details['Acronym'].str.lower().str.replace('_', ' ') == series_acronym.lower().replace('_', ' ')].iloc[0]
                 # extract the fields from the row
                 logger.debug(f"Found matching row in CORE_details for acronym {series_acronym}: {row}")
                 title = row['Title'].strip()
@@ -78,20 +79,19 @@ def preprocessing_core_openresearch_eventSeries(
                 
                 # remove parameter which has empty value
                 parameter_to_set = {k: v for k, v in parameter_to_set.items() if v != ''}
-                
                 new_wikitext, changed, old_tpl = set_multiple_params_in_template(series_wikitext, parameter_to_set, template_name, False)
-                if acronym.strip() != page_title.strip():
-                    logger.warning(f"series_title: {acronym} is not equal to page_title: {page_title}")
+                if acronym != page_title:
+                    logger.warning(f"Acronym: {acronym} is not equal to page_title: {page_title}")
                     # delete page and recreate page with correct acronym
                     # logger.debug(f"Deleting page {page_title} and recreating with correct acronym {acronym}")
                     delete_page(api_url, page_title, csrf_token, session)
                     # create page with new updated parameters
                     logger.debug(f"Creating page {acronym} with wikitext: {new_wikitext}")
                     # if create_page fails, log the error and edit the page with new updated parameters
-                    res = create_page(api_url, acronym, new_wikitext, csrf_token, f"Create page with updated parameters{parameter_to_set}", session, dry_run)
+                    res = create_page(api_url, acronym, new_wikitext, csrf_token, f"If acronym and title not matched recreate page with updated parameters{parameter_to_set}", session, dry_run)
                     if res.get('error'):
                         logger.error("Create result for page_title %s: result: %s", page_title, res['error']['code'])
-                        edit_page(api_url, acronym, new_wikitext, csrf_token, session, f"Edit page with updated parameters{parameter_to_set}", dry_run)
+                        edit_page(api_url, acronym, new_wikitext, csrf_token, session, f"If article exists edit page with updated parameters{parameter_to_set}", dry_run)
                 else:
                     # edit page with new updated parameters
                     logger.debug(f"Editing page {acronym} with wikitext: {new_wikitext}")
@@ -145,8 +145,8 @@ def create_core_openresearch_eventSeries(
     logger.info(f"Existing series acronyms in OpenResearch: {len(series_acronyms)}, e.g., {series_acronyms[0:50]}")
     for index, row in df_core_all_details.iterrows():
         try:
-            acronym = row['Acronym'].strip()
-            if acronym.lower() not in [s.lower().strip() for s in series_acronyms] and acronym.strip() != '':
+            acronym = row['Acronym']
+            if acronym not in series_acronyms and acronym.strip() != '':
                 logger.info(f"Creating new page for acronym {acronym} as it does not exist in OpenResearch")
                 title = row['Title'].strip()
                 field = row['Field'].strip()
@@ -166,7 +166,9 @@ def create_core_openresearch_eventSeries(
                 wikitext = f"{{{{{template_name}\n}}}}"  # create a new wikitext with the template
                 new_wikitext, changed, old_tpl = set_multiple_params_in_template(wikitext, parameter_to_set, template_name, False)
                 logger.debug(f"Creating page {acronym} with wikitext: {new_wikitext}")
-                create_page(api_url, acronym, new_wikitext, csrf_token, f"Create page with parameters{parameter_to_set}", session, dry_run)
+                res = create_page(api_url, acronym, new_wikitext, csrf_token, f"If page does not exists create page with parameters{parameter_to_set}", session, dry_run)
+                if res.get('error'):
+                        logger.error("Create core result for acronym %s: result: %s", acronym, res['error']['code'])
         except Exception as e:
             logger.error(f"Error creating new page for acronym {acronym}: {e}")
                 

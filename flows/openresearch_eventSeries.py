@@ -35,13 +35,14 @@ def openresearch_eventSeries(api_url: str,
     
     
     # deduplication of open research event series pages
+    """
     deduplicate_openresearch_eventSeries(api_url,
                                         username,
                                         password,
                                         core_all_details_path,
                                         template_name=template_name,
                                         dry_run=dry_run,
-    )
+    )"""
                 
     return True
 
