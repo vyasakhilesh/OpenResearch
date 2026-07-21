@@ -1,5 +1,6 @@
 from prefect import task, get_run_logger
 import requests
+import os
 from typing import Optional, Tuple, List, Dict, Any
 import re
 import json
@@ -7,10 +8,14 @@ from tasks.utils import _find_code_fence_content, _extract_balanced_braces, _cle
 import ast
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/responses"
+PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "INFO")  # Set default logging level to INFO if not specified
 
+# oldmodel = openai/gpt-5.4-mini
+# newmodel =anthropic/claude-sonnet-5
 @task(retries=1, retry_delay_seconds=5)
 def call_openrouter_task(prompt: str, api_key: str, model: str = "openai/gpt-5.4-mini", temperature: float = 0.0, max_output_tokens: int = 2000) -> Optional[dict]:
     logger = get_run_logger()
+    logger.setLevel(PREFECT_LOGGING_LEVEL)
     if not api_key:
         logger.error("LLM API key not provided")
         raise RuntimeError("LLM API key not provided")
@@ -26,6 +31,8 @@ def call_openrouter_task(prompt: str, api_key: str, model: str = "openai/gpt-5.4
         "Authorization": f"Bearer {api_key}"
     }
     resp = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=60)
+    logger.debug("OpenRouter response status: %s, content: %s", resp.status_code, resp.text)
+    logger.debug("OpenRouter response JSON: %s", resp.json())
     resp.raise_for_status()
     return resp.json()
 
