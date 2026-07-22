@@ -197,20 +197,28 @@ def deduplicate_openresearch_eventSeries(
     logger.info(f"Found {len(page_titles)} pages, e.g., {page_titles[0:50]}")
     # iterate through all page_titles and compare the title of page_title with all other titles in page_titles, if the title is similar to another title, log a warning
     logger.info(f"Checking for similar titles in existing series pages")
-    for i, page_title in enumerate(page_titles):
+    for i, page_title in enumerate(page_titles[0:-1]):
         for j, other_page_title in enumerate(page_titles[i+1:]):
-            similarity = string_similarity_levenshtein(page_title, other_page_title)
-            ratio = string_similarity_rapidfuzz(page_title, other_page_title)
-            if ratio > 0.8 and similarity > 0.8:
-                logger.warning(f"Series page title {page_title} is similar to {other_page_title} with similarity ratio {ratio}")
-                # show the wikitext of both pages
-                wikitext1 = get_page_wikitext(api_url, page_title, session)
-                wikitext2 = get_page_wikitext(api_url, other_page_title, session)
+            wikitext1 = get_page_wikitext(api_url, page_title, session)
+            series_json = extract_event_fields_from_wikitext(wikitext1)
+            logger.debug(f"""Series Page {page_title}: Json: {series_json} series_wikitext: {wikitext1}""")
+            title1 = series_json.get('Title', None)
+            
+            wikitext2 = get_page_wikitext(api_url, other_page_title, session)
+            series_json = extract_event_fields_from_wikitext(wikitext2)
+            logger.debug(f"""Series Page {other_page_title}: Json: {series_json} series_wikitext: {wikitext2}""")
+            title2 = series_json.get('Title', None)
+            
+            logger.info(f"Comparing titles:\n{title1}\n{title2}")
+            similarity = string_similarity_levenshtein(title1, title2)
+            ratio = string_similarity_rapidfuzz(title1, title2)
+            if ratio > 0.8 or similarity > 0.8:
+                logger.warning(f"Series page title {page_title} is similar to {other_page_title} with similarity {similarity} and ratio {ratio}")
                 # log the wikitext of both pages
                 logger.info(f"Wikitext of {page_title}: {wikitext1}")
                 logger.info(f"Wikitext of {other_page_title}: {wikitext2}")
                 # Ask human to review the pages and decide if they should be merged or one should be deleted.
                 # wait for human input to continue
-                input("Press Enter to continue...")
+                # input("Press Enter to continue...")
                 
     return True
