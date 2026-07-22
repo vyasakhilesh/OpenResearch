@@ -11,7 +11,7 @@ from typing import Iterable
 import Levenshtein
 from rapidfuzz import fuzz
 
-@task
+
 def filter_rank_series(series_list: List[str], core_26_dict: Dict[str, str], core_23_dict: Dict[str, str], rank: List[str] = ['A*', 'A', 'B', 'C']) -> List[str]:
     candidates = []
     for series in series_list:
@@ -168,7 +168,7 @@ def _clean_json_like(text: str) -> str:
     return text.strip()
 
 
-@task
+
 def update_dict(target, source,
                    treat_empty_strings=False,
                    treat_empty_containers=False):
@@ -199,7 +199,6 @@ def update_dict(target, source,
                     target[key] = src_val
                     
 # normalize string lowercase, remove stop words strip punctuation, whitespace, and replace multiple spaces with single space
-@task
 def normalize_string(s: Optional[str]) -> Optional[str]:
     if s is None:
         return None
@@ -220,7 +219,6 @@ def normalize_string(s: Optional[str]) -> Optional[str]:
     return s.strip()
 
 # calculate the similarity between two strings using normalized Levenshtein distance
-@task
 def string_similarity_levenshtein(s1: Optional[str], s2: Optional[str]) -> float:
     if s1 is None or s2 is None:
         return 0.0
@@ -231,11 +229,12 @@ def string_similarity_levenshtein(s1: Optional[str], s2: Optional[str]) -> float
     # calculate Levenshtein distance
     distance = Levenshtein.distance(s1, s2)
     max_len = max(len(s1), len(s2))
-    similarity = 1 - (distance / max_len)
-    return similarity
+    if max_len > 0:
+        similarity = 1 - (distance / max_len)
+        return similarity
+    return 0.0
 
 # calculate the similarity between two strings using normalized rapidfuzz ratio
-@task
 def string_similarity_rapidfuzz(s1: Optional[str], s2: Optional[str]) -> float:
     if s1 is None or s2 is None:
         return 0.0
@@ -245,4 +244,16 @@ def string_similarity_rapidfuzz(s1: Optional[str], s2: Optional[str]) -> float:
         return 0.0
     # calculate rapidfuzz ratio
     similarity = fuzz.ratio(s1, s2) / 100.0
+    return similarity
+
+# calculate the similarity between two string using normalized cosine similarity
+def string_similarity_cosine(s1: Optional[str], s2: Optional[str]):
+    if s1 is None or s2 is None:
+        return 0.0
+    s1 = normalize_string(s1)
+    s2 = normalize_string(s2)
+    if not s1 or not s2:
+        return 0.0
+    # calculate cosine similarity
+    similarity = 0.0
     return similarity
