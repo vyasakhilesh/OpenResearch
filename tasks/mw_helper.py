@@ -5,7 +5,6 @@ from typing import List, Tuple, Optional, Dict
 from typing import Dict, Callable, Any
 
 # Template helpers (kept as tasks so they are testable and visible)
-@task
 def find_template_block(wikitext: str, template_name: str = "Event") -> Optional[Tuple[str, int, int]]:
     open_pat = re.compile(r'\{\{\s*' + re.escape(template_name) + r'\b', re.IGNORECASE)
     m = open_pat.search(wikitext)
@@ -34,7 +33,7 @@ def find_template_block(wikitext: str, template_name: str = "Event") -> Optional
         return wikitext[start:end], start, end
     return None
 
-@task
+
 def parse_template_lines(template_text: str) -> Tuple[str, List[Tuple[str, Optional[str], Optional[str]]], str]:
     lines = template_text.splitlines()
     header = lines[0] if lines else ""
@@ -51,7 +50,6 @@ def parse_template_lines(template_text: str) -> Tuple[str, List[Tuple[str, Optio
             parsed.append((raw, None, None))
     return header, parsed, footer
 
-@task
 def render_template(header: str, parsed: List[Tuple[str, Optional[str], Optional[str]]], footer: str) -> str:
     out = [header]
     for raw, name, value in parsed:
@@ -62,7 +60,7 @@ def render_template(header: str, parsed: List[Tuple[str, Optional[str], Optional
     out.append(footer)
     return "\n".join(out)
 
-@task
+
 def set_multiple_params_in_template(wikitext: str, params_to_set: Dict[str, str], template_name: str = "Event", update_params: bool = False) -> Tuple[str, bool, Optional[str]]:
     tpl = find_template_block(wikitext, template_name)  # call task synchronously inside task
     if not tpl:
@@ -85,7 +83,7 @@ def set_multiple_params_in_template(wikitext: str, params_to_set: Dict[str, str]
     new_wikitext = wikitext[:start] + new_tpl + wikitext[end:]
     return new_wikitext, changed, tpl_text
 
-@task
+
 def extract_acronym_from_template(tpl_text: str) -> Optional[str]:
     header, parsed, footer = parse_template_lines(tpl_text)
     for _, name, value in parsed:
