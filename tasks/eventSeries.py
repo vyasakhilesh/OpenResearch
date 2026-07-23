@@ -88,7 +88,7 @@ def preprocessing_core_openresearch_eventSeries(
                     # create page with new updated parameters
                     logger.debug(f"Creating page {acronym} with wikitext: {new_wikitext}")
                     # if create_page fails, log the error and edit the page with new updated parameters
-                    res = create_page(api_url, acronym, new_wikitext, csrf_token, f"If acronym and title not matched recreate page with updated parameters{parameter_to_set}", session, dry_run)
+                    res = create_page(api_url, acronym, new_wikitext, csrf_token, session, f"If acronym and title not matched recreate page with updated parameters{parameter_to_set}", dry_run)
                     if res.get('error'):
                         logger.error("Create result for page_title %s: result: %s", page_title, res['error']['code'])
                         edit_page(api_url, acronym, new_wikitext, csrf_token, session, f"If article exists edit page with updated parameters{parameter_to_set}", dry_run)
@@ -166,7 +166,7 @@ def create_core_openresearch_eventSeries(
                 wikitext = f"{{{{{template_name}\n}}}}"  # create a new wikitext with the template
                 new_wikitext, changed, old_tpl = set_multiple_params_in_template(wikitext, parameter_to_set, template_name, False)
                 logger.debug(f"Creating page {acronym} with wikitext: {new_wikitext}")
-                res = create_page(api_url, acronym, new_wikitext, csrf_token, f"If page does not exists create page with parameters{parameter_to_set}", session, dry_run)
+                res = create_page(api_url, acronym, new_wikitext, csrf_token, session, f"If page does not exists create page with parameters{parameter_to_set}", dry_run)
                 if res.get('error'):
                         logger.error("Create core result for acronym %s: result: %s", acronym, res['error']['code'])
         except Exception as e:

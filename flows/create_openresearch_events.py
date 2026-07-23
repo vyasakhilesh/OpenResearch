@@ -94,7 +94,7 @@ def create_openresearch_events(
                             logger.error("LLM template validation failed for series: %s: \n error: %s \n llm_output: %s", series, err, llm_output)
                             continue
                         summary = f"Added upcoming edition for {series} {year} (automated(LLM-assisted) edit)"
-                        res = create_page(api_url, page_title, fixed, csrf_token, summary, session, dry_run)
+                        res = create_page(api_url, page_title, fixed, csrf_token, session, summary, dry_run)
                         logger.info("Create result for page_title %s: result: %s", page_title, res['error']['code'] if res.get('error') else res)
                         if res.get('error'):
                             logger.error("Create result for page_title %s: result: %s", page_title, res['error']['code'])
