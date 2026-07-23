@@ -53,7 +53,7 @@ def get_page_wikitext(api_url: str, title: str, session) -> str:
 # 5. Create page
 # https://www.mediawiki.org/wiki/API:Edit
 @task
-def create_page(api_url: str, title: str, content: str, csrf_token: str, summary: str,  session, dry_run: bool = True) -> dict:
+def create_page(api_url: str, title: str, content: str, csrf_token: str, session, summary: str, dry_run: bool = True) -> dict:
     if dry_run:
         print("DRY RUN: would create", title)
         return {"result":"dryrun"}
