@@ -125,6 +125,7 @@ def preprocessing_openresearch_events(
                       existing_tpl, existing_start, existing_end = find_template_block(existing_event_wikitext, "Event")
                       if res.get('error') and existing_tpl!=fixed:
                         logger.error("Edit result for page_title %s: result: %s", page_title, res['error']['code'])
+                        summary = f"Recreated cleaned duplicated {page_title} with new text {new_wikitext} (automated(LLM-assisted))"
                         create_page(api_url, new_acronym + ' (Duplicate)', new_wikitext, csrf_token, session, summary, dry_run)
                         continue
                       logger.info("Create result for page_title %s: result: %s", page_title, res['error']['code'] if res.get('error') else res)
