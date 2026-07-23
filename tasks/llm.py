@@ -156,7 +156,7 @@ def extract_json_object_from_llm(text: str) -> Optional[Any]:
 
     return None
 
-@task
+
 def fix_and_validate_event_template(text: str) -> Tuple[Optional[str], Optional[str]]:
     t = text or ""
     m = re.search(r"\{\{Event\b(.*?)\}\}", t, flags=re.S)
@@ -169,6 +169,26 @@ def fix_and_validate_event_template(text: str) -> Tuple[Optional[str], Optional[
     body = body.strip("\n\r")
     fixed_template = "{{Event\n" + body + "\n}}"
     required = ['|Acronym=', '|Title=', '|Start date=', '|End date=', '|City=', '|Country=']
+    missing = [f for f in required if f not in fixed_template]
+    if missing:
+        return None, f"Missing required fields: {missing}"
+    if fixed_template.count("{{") != fixed_template.count("}}"):
+        return None, "Unbalanced double braces after fix"
+    fixed_text = t[:start] + fixed_template + t[end:]
+    return fixed_text, None
+
+def fix_event_template(text: str) -> Tuple[Optional[str], Optional[str]]:
+    t = text or ""
+    m = re.search(r"\{\{Event\b(.*?)\}\}", t, flags=re.S)
+    if not m:
+        m = re.search(r"\{Event\b(.*?)\}", t, flags=re.S)
+    if not m:
+        return None, "No Event template found"
+    body = m.group(1)
+    start, end = m.span()
+    body = body.strip("\n\r")
+    fixed_template = "{{Event\n" + body + "\n}}"
+    required = ['|Acronym=', '|Title=']
     missing = [f for f in required if f not in fixed_template]
     if missing:
         return None, f"Missing required fields: {missing}"
