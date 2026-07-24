@@ -183,7 +183,11 @@ def deduplicate_openresearch_eventSeries(
     core_all_details_path: str,
     template_name: str = "Event series",
     dry_run: bool = True,
-):
+):  
+    from itertools import combinations
+    from collections import deque
+    from concurrent.futures import ThreadPoolExecutor
+    import logging
     logger = get_run_logger()
     logger.setLevel(PREFECT_LOGGING_LEVEL)
     
@@ -197,28 +201,59 @@ def deduplicate_openresearch_eventSeries(
     logger.info(f"Found {len(page_titles)} pages, e.g., {page_titles[0:50]}")
     # iterate through all page_titles and compare the title of page_title with all other titles in page_titles, if the title is similar to another title, log a warning
     logger.info(f"Checking for similar titles in existing series pages")
+    
+    def comparing_titles(api_url, session, page_title, other_page_title):
+        wikitext1 = get_page_wikitext(api_url, page_title, session)
+        series_json = extract_event_fields_from_wikitext(wikitext1)
+        title1 = series_json.get('Title', page_title)
+        
+        wikitext2 = get_page_wikitext(api_url, other_page_title, session)
+        series_json = extract_event_fields_from_wikitext(wikitext2)
+        title2 = series_json.get('Title', other_page_title)
+        
+        similarity = string_similarity_levenshtein(title1, title2)
+        ratio = string_similarity_rapidfuzz(title1, title2)
+        if ratio > 0.8 or similarity > 0.8:
+            logger.warning(f"{page_title} is similar to {other_page_title} with similarity {similarity} and ratio {ratio}")
+            logger.warning(f"{title1}\n{title2}")
+            logger.warning(f"Wikitext of {page_title}:\n{wikitext1}")
+            logger.warning(f"Wikitext of {other_page_title}:\n{wikitext2}")
+        
+        logger.info(f"Successfully compared page {page_title} with page {other_page_title}")
+            
+
+    def compare_all_threaded(page_titles, api_url, session, max_workers=20):
+        """
+        Submit pairwise comparisons concurrently while keeping at most max_workers futures in memory.
+        """
+        pending = deque()
+        with ThreadPoolExecutor(max_workers=max_workers) as ex:
+            for i, (a, b) in enumerate(combinations(page_titles, 2)):
+                logger.info(f"Submitting comparison {i}: {a} vs {b}")
+                pending.append(ex.submit(comparing_titles, api_url, session, a, b))
+
+                # keep only up to max_workers futures queued to limit memory and in-flight requests
+                if len(pending) >= max_workers:
+                    fut = pending.popleft()
+                    try:
+                        fut.result()
+                    except Exception:
+                        logger.exception("Error while comparing pages")
+
+            # wait for remaining futures
+            while pending:
+                fut = pending.popleft()
+                try:
+                    fut.result()
+                except Exception:
+                    logger.exception("Error while comparing pages")
+              
+    """
     for i, page_title in enumerate(page_titles[0:-1]):
         for j, other_page_title in enumerate(page_titles[i+1:]):
             logger.info(f"Comparing page {i}:{page_title} with page {j}:{other_page_title}")
-            wikitext1 = get_page_wikitext(api_url, page_title, session)
-            series_json = extract_event_fields_from_wikitext(wikitext1)
-            logger.debug(f"""Series Page {page_title}: Json: {series_json} series_wikitext: {wikitext1}""")
-            title1 = series_json.get('Title', page_title)
-            
-            wikitext2 = get_page_wikitext(api_url, other_page_title, session)
-            series_json = extract_event_fields_from_wikitext(wikitext2)
-            logger.debug(f"""Series Page {other_page_title}: Json: {series_json} series_wikitext: {wikitext2}""")
-            title2 = series_json.get('Title', other_page_title)
-            
-            similarity = string_similarity_levenshtein(title1, title2)
-            ratio = string_similarity_rapidfuzz(title1, title2)
-            if ratio > 0.8 or similarity > 0.8:
-                logger.warning(f"Series page title {page_title} is similar to {other_page_title} with similarity {similarity} and ratio {ratio}")
-                # log the wikitext of both pages
-                logger.info(f"Wikitext of {page_title}: {wikitext1}")
-                logger.info(f"Wikitext of {other_page_title}: {wikitext2}")
-                # Ask human to review the pages and decide if they should be merged or one should be deleted.
-                # wait for human input to continue
-                # input("Press Enter to continue...")
+            comparing_titles(api_url, session, page_title, other_page_title)
+    """
+    compare_all_threaded(page_titles, api_url, session, max_workers=20)
                 
     return True
