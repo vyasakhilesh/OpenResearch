@@ -10,6 +10,39 @@ from html import unescape
 from typing import Iterable
 import Levenshtein
 from rapidfuzz import fuzz
+import re
+from typing import List, Dict, Union
+
+Number = Union[int, float]
+
+def extract_numbers(text: str) -> List[Dict[str, Number]]:
+    """
+    Extract numbers from a string.
+    """
+    pattern = (
+        r'(?P<prefix>[\$₹€£])?'                                  # optional currency symbol
+        r'(?P<number>'
+        r'[-+]?\d{1,3}(?:,\d{3})+(?:\.\d+)?(?:[eE][-+]?\d+)?'    # numbers with commas
+        r'|[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?'            # plain ints/floats/scientific
+        r')'
+        r'(?P<percent>%)?'                                       # optional percent sign
+    )
+    matches = re.finditer(pattern, text)
+    for m in matches:
+        raw = m.group(0)
+        num_str = m.group('number').replace(',', '')
+        is_percent = bool(m.group('percent'))
+
+        # convert to int when appropriate, otherwise float
+        if re.fullmatch(r'[-+]?\d+', num_str):
+            value: Number = int(num_str)
+        else:
+            value = float(num_str)
+
+        if is_percent:
+            value = value / 100.0
+
+    return value
 
 
 def filter_rank_series(series_list: List[str], core_26_dict: Dict[str, str], core_23_dict: Dict[str, str], rank: List[str] = ['A*', 'A', 'B', 'C']) -> List[str]:
@@ -61,7 +94,7 @@ def extract_event_fields_from_wikitext(text: str) -> Dict[str, Optional[str]]:
     # Find the first {{Event ... }} block (non-greedy)
     m = re.search(r"\{\{\s*Event\b(.*?)\}\}", text, re.DOTALL | re.IGNORECASE)
     if not m:
-        return {"Series": None, "Title": None, "Field": None, 'Acronym': None}
+        return {"Series": None, "Title": None, "Field": None, 'Acronym': None, 'Ordinal': None}
 
     body = m.group(1)
 
@@ -84,6 +117,7 @@ def extract_event_fields_from_wikitext(text: str) -> Dict[str, Optional[str]]:
     title = fields.get("title") or None
     field = fields.get("field") or None
     acronym = fields.get("acronym") or None
+    ordinal = fields.get("ordinal") or None
 
     # Normalize empty strings to None
     def _none_if_empty(x):
@@ -92,7 +126,8 @@ def extract_event_fields_from_wikitext(text: str) -> Dict[str, Optional[str]]:
     return {
         "Title": _none_if_empty(title),
         "Acronym": _none_if_empty(acronym),
-        "Field":  _none_if_empty(field)
+        "Field":  _none_if_empty(field),
+        "Ordinal": _none_if_empty(ordinal)
     }
     
 def _normalize_key(k: str) -> str:
