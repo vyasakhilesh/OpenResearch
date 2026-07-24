@@ -199,17 +199,17 @@ def deduplicate_openresearch_eventSeries(
     logger.info(f"Checking for similar titles in existing series pages")
     for i, page_title in enumerate(page_titles[0:-1]):
         for j, other_page_title in enumerate(page_titles[i+1:]):
+            logger.info(f"Comparing page {i}:{page_title} with page {j}:{other_page_title}")
             wikitext1 = get_page_wikitext(api_url, page_title, session)
             series_json = extract_event_fields_from_wikitext(wikitext1)
             logger.debug(f"""Series Page {page_title}: Json: {series_json} series_wikitext: {wikitext1}""")
-            title1 = series_json.get('Title', None)
+            title1 = series_json.get('Title', page_title)
             
             wikitext2 = get_page_wikitext(api_url, other_page_title, session)
             series_json = extract_event_fields_from_wikitext(wikitext2)
             logger.debug(f"""Series Page {other_page_title}: Json: {series_json} series_wikitext: {wikitext2}""")
-            title2 = series_json.get('Title', None)
+            title2 = series_json.get('Title', other_page_title)
             
-            logger.info(f"Comparing titles:\n{title1}\n{title2}")
             similarity = string_similarity_levenshtein(title1, title2)
             ratio = string_similarity_rapidfuzz(title1, title2)
             if ratio > 0.8 or similarity > 0.8:
