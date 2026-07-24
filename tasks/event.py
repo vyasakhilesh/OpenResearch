@@ -23,7 +23,7 @@ from tasks.llm import (
     get_event_template, 
     fix_event_template
 )
-from tasks.mw_helper import find_template_block
+from tasks.mw_helper import find_template_block, set_multiple_params_in_template
 from tasks.utils import extract_event_fields_from_wikitext
 from typing import List, Dict, Optional
 import os
@@ -49,7 +49,7 @@ Output requirements::
   Formatting rules:
   - Each template line must be of the form: |Key=Value
   - Acronym must be abbreviation of event, e.g. ICWE 2024
-  - Title is full title of the given event, (e.g. 24th International Conference on Web Engineering)
+  - Title is full title of the given event, e.g. 24th International Conference on Web Engineering
   - Ordinal of the event e.g 24 for 24th event
   - Type must be one of Conference, Workshop, Tutorial, Symposium
   - Series must be abbreviation of event series, e.g. ICWE
@@ -62,31 +62,10 @@ Output requirements::
   return prompt
 
 
-@task(name="preprocessing-openresearch-events", description="preprocessing OpenResearch event pages using core data details")
-def preprocessing_openresearch_events(
-    api_url: str,
-    username: str,
-    password: str,
-    core_all_details_path: str,
-    template_name: str = "Stand-alone event",
-    llm_api_key: Optional[str] = None,
-    dry_run: bool = True,
-):
-    
-    logger = get_run_logger()
-    logger.setLevel(PREFECT_LOGGING_LEVEL)
-    
-    # get core_all_details dataframe
-    df_core_all_details = pd.read_csv(core_all_details_path)
-    df_core_all_details = df_core_all_details.replace(np.nan, '', regex=True)  # Replace NaN with empty string
-    csrf_token, session = login_and_get_csrf(api_url, username, password)
-        
-    # 1. collect pages
-    page_titles = get_event_pages(api_url, session, f"Category:{template_name}")
-    logger.info(f"Found {len(page_titles)} pages, e.g., {page_titles[0:50]}")
-    # 3. iterate series and create pages
-    for idx, page_title in enumerate(page_titles[0:50]):  # limit to first 10 for testing
+def fix_event_duplicates(api_url: str, page_titles: List[str], session, csrf_token: str, llm_api_key: Optional[str], dry_run: bool, logger):
+    for idx, page_title in enumerate(page_titles):  # limit to first 10 for testing
         logger.info(f"Processing page {idx}:{page_title}")
+        # fix duplicates and clean template using LLM if needed
         try:
             event_wikitext = get_page_wikitext(api_url, page_title, session)
             event_json = extract_event_fields_from_wikitext(event_wikitext)
@@ -96,10 +75,10 @@ def preprocessing_openresearch_events(
             title = event_json.get("Title", page_title)
             logger.debug(f"Template block for {page_title}: {tpl}")
             if llm_api_key \
-               and tpl \
-               and ((len(acronym.strip().split(' ')) != 2 or (len(acronym.strip().split(' ')) == 2 and acronym.strip().split(' ')[0].isnumeric())) \
-               or (len(title.strip().split(' ')) < 4)
-               or (len(page_title.strip().split(' ')) != 2 or (len(page_title.strip().split(' ')) == 2 and page_title.strip().split(' ')[0].isnumeric()))):
+                and tpl \
+                and ((len(acronym.strip().split(' ')) != 2 or (len(acronym.strip().split(' ')) == 2 and acronym.strip().split(' ')[0].isnumeric())) \
+                or (len(title.strip().split(' ')) < 4)
+                or (len(page_title.strip().split(' ')) != 2 or (len(page_title.strip().split(' ')) == 2 and page_title.strip().split(' ')[0].isnumeric()))):
                 logger.info("LLM-assisted cleaning for page_title: %s, acronym: %s, title: %s", page_title, acronym, title)
                 prompt = build_clean_event_prompt(event_wikitext)
                 llm_output = get_event_template(llm_api_key, prompt)
@@ -122,15 +101,69 @@ def preprocessing_openresearch_events(
                       res = create_page(api_url, new_acronym, new_wikitext, csrf_token, session, summary, dry_run)
                       # existing page template block for new_acronym
                       existing_event_wikitext = get_page_wikitext(api_url, new_acronym, session)
-                      existing_tpl, existing_start, existing_end = find_template_block(existing_event_wikitext, "Event")
+                      existing_tpl, _, _ = find_template_block(existing_event_wikitext, "Event")
                       if res.get('error') and existing_tpl!=fixed:
                         logger.error("Edit result for page_title %s: result: %s", page_title, res['error']['code'])
                         summary = f"Recreated cleaned duplicated {page_title} with new text {new_wikitext} (automated(LLM-assisted))"
                         create_page(api_url, new_acronym + ' (Duplicate)', new_wikitext, csrf_token, session, summary, dry_run)
                         continue
                       logger.info("Create result for page_title %s: result: %s", page_title, res['error']['code'] if res.get('error') else res)
-
         except Exception as e:
-          logger.error("Exception for %s: %s", page_title, e)
+          logger.error("Fix Event Duplicate Exception for %s: %s", page_title, e)
+          
+def fix_event_ordinal(api_url: str, page_titles: List[str], session, csrf_token: str, llm_api_key: Optional[str], dry_run: bool, logger):
+    for idx, page_title in enumerate(page_titles):  # limit to first 10 for testing
+        logger.info(f"Processing page {idx}:{page_title}")
+        # fix duplicates and clean template using LLM if needed
+        try:
+            event_wikitext = get_page_wikitext(api_url, page_title, session)
+            event_json = extract_event_fields_from_wikitext(event_wikitext)
+            logger.debug(f"""Event Page {page_title}: Json: {event_json} event_wikitext: {event_wikitext}""")
+            tpl, start, end = find_template_block(event_wikitext, "Event")
+            ordinal = event_json.get("Ordinal", None)
+            logger.debug(f"Template block for {page_title}: {tpl}")
+            if ordinal:
+               # extract number from ordinal string e.g. 15th => 15, 1st => 1, 2nd => 2, 3rd => 3, 4th => 4
+               ordinal_number = int(''.join(filter(str.isdigit, ordinal)))
+               if str(ordinal_number) != str(ordinal) and ordinal_number > 0:
+                   logger.info("Fixing ordinal for page_title: %s, ordinal: %s", page_title, ordinal)
+                   new_wikitext = set_multiple_params_in_template(event_wikitext, {"Ordinal": ordinal_number}, "Event")[0]
+                   summary = f"Fixed ordinal {ordinal} to {ordinal_number} for {page_title} (automated)"
+                   res = edit_page(api_url, page_title, new_wikitext, csrf_token, session, summary, dry_run)
+                   logger.info("Edit result for page_title %s: result: %s", page_title, res['error']['code'] if res.get('error') else res)
+        except Exception as e:
+            logger.error("Fix Event Ordinal Exception for %s: %s", page_title, e)
+  
+@task(name="preprocessing-openresearch-events", description="preprocessing OpenResearch event pages using core data details")
+def preprocessing_openresearch_events(
+    api_url: str,
+    username: str,
+    password: str,
+    core_all_details_path: str,
+    template_name: str = "Stand-alone event",
+    llm_api_key: Optional[str] = None,
+    dry_run: bool = True,
+):
+    
+    logger = get_run_logger()
+    logger.setLevel(PREFECT_LOGGING_LEVEL)
+    
+    # get core_all_details dataframe
+    df_core_all_details = pd.read_csv(core_all_details_path)
+    df_core_all_details = df_core_all_details.replace(np.nan, '', regex=True)  # Replace NaN with empty string
+    csrf_token, session = login_and_get_csrf(api_url, username, password)
+        
+    # 1. collect pages
+    page_titles = get_event_pages(api_url, session, f"Category:{template_name}")
+    logger.info(f"Found {len(page_titles)} pages, e.g., {page_titles[0:50]}")
+    
+    # fix event duplicates and clean template using LLM if needed
+    fix_event_duplicates(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
+    
+    # fix event ordinal
+    fix_event_ordinal()
+
+
+
           # time.sleep(1)
     return True
