@@ -72,7 +72,8 @@ services:
         condition: service_healthy
     env_file:
       - .env
-      
+    environment:
+      PREFECT_API_URL: http://prefect-server:4200/api
     command: prefect worker start --pool local-pool
     restart: on-failure
     volumes:
