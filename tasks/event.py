@@ -71,7 +71,7 @@ def fix_event_wikitext(api_url: str, page_titles: List[str], session, csrf_token
             event_wikitext = get_page_wikitext(api_url, page_title, session)
             pattern = r"=== Sources ===\s*\}\s*"
             ordinal_re = re.compile(r'\|\s*ordinal\s*=\s*["\']?\s*\d{4}\s*["\']?', re.IGNORECASE)
-            event_wikitext = re.sub(pattern, "=== Sources ===\n}}", event_wikitext)
+            event_wikitext = re.sub(pattern, '', event_wikitext)
             event_wikitext = ordinal_re.sub('', event_wikitext)
             summary = f"Cleaned {page_title} with new text {event_wikitext}"
             res = edit_page(api_url, page_title, event_wikitext, csrf_token, session, summary, dry_run)
