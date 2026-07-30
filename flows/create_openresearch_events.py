@@ -33,9 +33,9 @@ Output requirements::
   4. If a key's value is unknown or cannot be reliably determined with full confidence, remove that key entirely from the template.
 Formatting rules:
   - Each template line must be of the form: |Key=Value
-  - Acronym must be abbreviation of event, e.g. ICWE 2024
+  - Acronym must be abbreviation of event with year, e.g. ICWE 2024
   - Title is full title of the given event, (e.g. 24th International Conference on Web Engineering)
-  - Ordinal of the event e.g 24 for 24th event
+  - Ordinal of the event and it must be between 1 to 200 and must not be a year. e.g 24 for 24th event, 1 for 1st
   - Type must be one of Conference, Workshop, Tutorial, Symposium
   - Series must be abbreviation of event series, e.g. ICWE
   - Field must be a primary scientific field of the event

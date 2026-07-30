@@ -346,7 +346,7 @@ Output requirements::
   3. Do not include any other text, explanation, or commentary.
 Formatting rules:
   - Each template line must be of the form: |Key=Value
-  - Acronym must be abbreviation of event, e.g. ICWE 2024
+  - Acronym must be abbreviation of event with year, e.g. ICWE 2024
   - Ordinal is positive integer value
   - Type must be one of Conference, Workshop, Tutorial, Symposium
   - Series must be abbreviation of event series, e.g. ICWE
