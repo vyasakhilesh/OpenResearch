@@ -29,6 +29,7 @@ from typing import List, Dict, Optional
 import os
 import pandas as pd
 import numpy as np
+import re
 
 PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "INFO")
 # PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "DEBUG")
@@ -48,9 +49,9 @@ Output requirements::
   
   Formatting rules:
   - Each template line must be of the form: |Key=Value
-  - Acronym must be abbreviation of event, e.g. ICWE 2024
+  - Acronym must be abbreviation of event with year, e.g. ICWE 2024
   - Title is full title of the given event, e.g. 24th International Conference on Web Engineering
-  - Ordinal of the event e.g 24 for 24th event
+  - Ordinal of the event and it must be between 1 to 200 and must not be a year. e.g 24 for 24th event, 1 for 1st
   - Type must be one of Conference, Workshop, Tutorial, Symposium
   - Series must be abbreviation of event series, e.g. ICWE
   - Field must be a primary scientific field of the event
@@ -62,6 +63,25 @@ Output requirements::
   return prompt
 
 
+def fix_event_wikitext(api_url: str, page_titles: List[str], session, csrf_token: str, llm_api_key: Optional[str], dry_run: bool, logger):
+    for idx, page_title in enumerate(page_titles):  # limit to first 10 for testing
+        logger.info(f"Processing page {idx}:{page_title}")
+        # fix duplicates and clean template using LLM if needed
+        try:
+            event_wikitext = get_page_wikitext(api_url, page_title, session)
+            pattern = r"=== Sources ===\s*\}\s*"
+            ordinal_re = re.compile(r'\|\s*ordinal\s*=\s*["\']?\s*\d{4}\s*["\']?', re.IGNORECASE)
+            event_wikitext = re.sub(pattern, "=== Sources ===\n}}", event_wikitext)
+            event_wikitext = ordinal_re.sub('', event_wikitext)
+            summary = f"Cleaned {page_title} with new text {event_wikitext}"
+            res = edit_page(api_url, page_title, event_wikitext, csrf_token, session, summary, dry_run)
+            if res.get('error'):
+                logger.error("Edit result for page_title %s: result: %s", page_title, res['error']['code'])
+        except Exception as e:
+            logger.error("Get Event Wikitext Exception for %s: %s", page_title, e)
+            continue
+            
+    
 def fix_event_duplicates(api_url: str, page_titles: List[str], session, csrf_token: str, llm_api_key: Optional[str], dry_run: bool, logger):
     for idx, page_title in enumerate(page_titles):  # limit to first 10 for testing
         logger.info(f"Processing page {idx}:{page_title}")
@@ -76,9 +96,9 @@ def fix_event_duplicates(api_url: str, page_titles: List[str], session, csrf_tok
             logger.debug(f"Template block for {page_title}: {tpl}")
             if llm_api_key \
                 and tpl \
-                and ((len(acronym.strip().split(' ')) != 2 or (len(acronym.strip().split(' ')) == 2 and acronym.strip().split(' ')[0].isnumeric())) \
+                or (((len(acronym.strip().split(' ')) != 2 or (len(acronym.strip().split(' ')) == 2 and acronym.strip().split(' ')[0].isnumeric())) \
                 or (len(title.strip().split(' ')) < 4)
-                or (len(page_title.strip().split(' ')) != 2 or (len(page_title.strip().split(' ')) == 2 and page_title.strip().split(' ')[0].isnumeric()))):
+                or (len(page_title.strip().split(' ')) != 2 or (len(page_title.strip().split(' ')) == 2 and page_title.strip().split(' ')[0].isnumeric())))):
                 logger.info("LLM-assisted cleaning for page_title: %s, acronym: %s, title: %s", page_title, acronym, title)
                 prompt = build_clean_event_prompt(event_wikitext)
                 llm_output = get_event_template(llm_api_key, prompt)
@@ -110,6 +130,8 @@ def fix_event_duplicates(api_url: str, page_titles: List[str], session, csrf_tok
                       logger.info("Create result for page_title %s: result: %s", page_title, res['error']['code'] if res.get('error') else res)
         except Exception as e:
           logger.error("Fix Event Duplicate Exception for %s: %s", page_title, e)
+          create_page(api_url, page_title, event_wikitext, csrf_token, session, f"Recreated {page_title} after exception {e} (automated)", dry_run)
+          logger.info("Recreated page %s after exception %s", page_title, e)
           
 def fix_event_ordinal(api_url: str, page_titles: List[str], session, csrf_token: str, llm_api_key: Optional[str], dry_run: bool, logger):
     for idx, page_title in enumerate(page_titles):  # limit to first 10 for testing
@@ -158,10 +180,13 @@ def preprocessing_openresearch_events(
     logger.info(f"Found {len(page_titles)} pages, e.g., {page_titles[0:50]}")
     
     # fix event duplicates and clean template using LLM if needed
-    fix_event_duplicates(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
+    # fix_event_duplicates(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
     
     # fix event ordinal
-    fix_event_ordinal()
+    # fix_event_ordinal(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
+    
+    # fix event wikitext
+    fix_event_wikitext(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
 
 
 
