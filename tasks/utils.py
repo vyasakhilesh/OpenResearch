@@ -292,3 +292,111 @@ def string_similarity_cosine(s1: Optional[str], s2: Optional[str]):
     # calculate cosine similarity
     similarity = 0.0
     return similarity
+
+def clean_submitted_papers(text: str) -> str:
+    PATTERN = re.compile(r'\|\s*submitted\s*papers\s*=\s*([^\|\n]*)', re.IGNORECASE)
+    out_lines = []
+    for line in text.splitlines():
+        matches = list(PATTERN.finditer(line))
+        if not matches:
+            out_lines.append(line)
+            continue
+
+        # If any match on the line is invalid, drop the whole line
+        keep_line = True
+        for m in matches:
+            val = m.group(1).strip()
+            # Treat empty value as invalid
+            if val == '':
+                keep_line = False
+                break
+            # Accept only integer tokens
+            if not re.fullmatch(r'[+-]?\d+', val):
+                keep_line = False
+                break
+            try:
+                n = int(val)
+            except ValueError:
+                keep_line = False
+                break
+            if n <= 0:
+                keep_line = False
+                break
+
+        if keep_line:
+            out_lines.append(line)
+        # else: skip the line entirely
+
+    return '\n'.join(out_lines)
+
+def clean_accepted_papers(text: str) -> str:
+    PATTERN = re.compile(r'\|\s*accepted\s*papers\s*=\s*([^\|\n]*)', re.IGNORECASE)
+    out_lines = []
+    for line in text.splitlines():
+        matches = list(PATTERN.finditer(line))
+        if not matches:
+            out_lines.append(line)
+            continue
+
+        # If any match on the line is invalid, drop the whole line
+        keep_line = True
+        for m in matches:
+            val = m.group(1).strip()
+            # Treat empty value as invalid
+            if val == '':
+                keep_line = False
+                break
+            # Accept only integer tokens
+            if not re.fullmatch(r'[+-]?\d+', val):
+                keep_line = False
+                break
+            try:
+                n = int(val)
+            except ValueError:
+                keep_line = False
+                break
+            if n <= 0:
+                keep_line = False
+                break
+
+        if keep_line:
+            out_lines.append(line)
+        # else: skip the line entirely
+
+    return '\n'.join(out_lines)
+
+def clean_accepted_short_papers(text: str) -> str:
+    PATTERN = re.compile(r'\|\s*accepted\s*short\s*papers\s*=\s*([^\|\n]*)', re.IGNORECASE)
+    out_lines = []
+    for line in text.splitlines():
+        matches = list(PATTERN.finditer(line))
+        if not matches:
+            out_lines.append(line)
+            continue
+
+        # If any match on the line is invalid, drop the whole line
+        keep_line = True
+        for m in matches:
+            val = m.group(1).strip()
+            # Treat empty value as invalid
+            if val == '':
+                keep_line = False
+                break
+            # Accept only integer tokens
+            if not re.fullmatch(r'[+-]?\d+', val):
+                keep_line = False
+                break
+            try:
+                n = int(val)
+            except ValueError:
+                keep_line = False
+                break
+            if n <= 0:
+                keep_line = False
+                break
+
+        if keep_line:
+            out_lines.append(line)
+        # else: skip the line entirely
+
+    return '\n'.join(out_lines)

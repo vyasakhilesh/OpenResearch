@@ -24,7 +24,12 @@ from tasks.llm import (
     fix_event_template
 )
 from tasks.mw_helper import find_template_block, set_multiple_params_in_template
-from tasks.utils import extract_event_fields_from_wikitext
+from tasks.utils import (
+    extract_event_fields_from_wikitext, 
+    clean_submitted_papers,
+    clean_accepted_papers,
+    clean_accepted_short_papers,
+)
 from typing import List, Dict, Optional
 import os
 import pandas as pd
@@ -63,6 +68,7 @@ Output requirements::
   return prompt
 
 
+
 def fix_event_wikitext(api_url: str, page_titles: List[str], session, csrf_token: str, llm_api_key: Optional[str], dry_run: bool, logger):
     for idx, page_title in enumerate(page_titles):  # limit to first 10 for testing
         logger.info(f"Processing page {idx}:{page_title}")
@@ -75,6 +81,11 @@ def fix_event_wikitext(api_url: str, page_titles: List[str], session, csrf_token
             event_wikitext = re.sub(pre_src_pattern, '', event_wikitext)
             event_wikitext = re.sub(src_pattern, '', event_wikitext)
             event_wikitext = ordinal_re.sub('', event_wikitext)
+            # clean papers count lines
+            event_wikitext = clean_submitted_papers(event_wikitext)
+            event_wikitext = clean_accepted_papers(event_wikitext)
+            event_wikitext = clean_accepted_short_papers(event_wikitext)
+            # summary
             summary = f"Cleaned {page_title} with new text {event_wikitext}"
             res = edit_page(api_url, page_title, event_wikitext, csrf_token, session, summary, dry_run)
             if res.get('error'):
