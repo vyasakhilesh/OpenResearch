@@ -29,6 +29,7 @@ from tasks.utils import (
     clean_submitted_papers,
     clean_accepted_papers,
     clean_accepted_short_papers,
+    normalize_event_dates,
 )
 from typing import List, Dict, Optional
 import os
@@ -85,6 +86,7 @@ def fix_event_wikitext(api_url: str, page_titles: List[str], session, csrf_token
             event_wikitext = clean_submitted_papers(event_wikitext)
             event_wikitext = clean_accepted_papers(event_wikitext)
             event_wikitext = clean_accepted_short_papers(event_wikitext)
+            event_wikitext = normalize_event_dates(event_wikitext)
             # summary
             summary = f"Cleaned {page_title} with new text {event_wikitext}"
             res = edit_page(api_url, page_title, event_wikitext, csrf_token, session, summary, dry_run)

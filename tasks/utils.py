@@ -15,6 +15,20 @@ from typing import List, Dict, Union
 
 Number = Union[int, float]
 
+try:
+    from dateutil import parser as _dateutil_parser
+except Exception:
+    _dateutil_parser = None
+
+COMMON_FORMATS = [
+    "%Y-%m-%d", "%Y/%m/%d", "%Y.%m.%d",
+    "%d-%m-%Y", "%d/%m/%Y", "%m-%d-%Y", "%m/%d/%Y",
+    "%d %b %Y", "%d %B %Y", "%b %d, %Y", "%B %d, %Y",
+    "%d.%m.%Y", "%Y%m%d", "%d-%b-%Y", "%d-%B-%Y",
+    "%d-%m-%y", "%m/%d/%y", "%y-%m-%d",
+]
+
+
 def extract_numbers(text: str) -> List[Dict[str, Number]]:
     """
     Extract numbers from a string.
@@ -400,3 +414,85 @@ def clean_accepted_short_papers(text: str) -> str:
         # else: skip the line entirely
 
     return '\n'.join(out_lines)
+
+
+def try_parse_date(s: str) -> Optional[datetime.date]:
+    # Patterns that we consider invalid and will remove
+    _YEAR_ONLY_RE = re.compile(r'^\s*\d{4}\s*$')
+    _YEAR_MONTH_NUMERIC_RE = re.compile(r'^\s*\d{4}[-/]\d{1,2}\s*$')
+    # Month name + year like "March 2020" or "Mar 2020" or "March, 2020"
+    _MONTH_NAME_YEAR_RE = re.compile(
+    r'^\s*(?:Jan|January|Feb|February|Mar|March|Apr|April|May|Jun|June|'
+    r'Jul|July|Aug|August|Sep|Sept|September|Oct|October|Nov|November|'
+    r'Dec|December)\b[ ,\-]*\d{4}\s*$',
+    re.IGNORECASE
+    )
+    if s is None:
+        return None
+    s = s.strip()
+    if s == "":
+        return None
+
+    if len(s) >= 2 and s[0] == s[-1] and s[0] in "\"'":
+        s = s[1:-1].strip()
+        if s == "":
+            return None
+
+    if _YEAR_ONLY_RE.match(s):
+        return None
+
+    if _YEAR_MONTH_NUMERIC_RE.match(s):
+        return None
+
+    if _MONTH_NAME_YEAR_RE.match(s):
+        return None
+
+    for fmt in COMMON_FORMATS:
+        try:
+            dt = datetime.strptime(s, fmt)
+            return dt.date()
+        except Exception:
+            continue
+
+    if _dateutil_parser is not None:
+        try:
+            dt = _dateutil_parser.parse(s, dayfirst=False, yearfirst=True)
+            return dt.date()
+        except Exception:
+            try:
+                dt = _dateutil_parser.parse(s, dayfirst=True, yearfirst=False)
+                return dt.date()
+            except Exception:
+                return None
+
+    return None
+
+
+def normalize_event_dates(text: str) -> str:
+    FIELD_PATTERN = re.compile(
+        r'^(?P<prefix>\s*\|\s*(?P<field>Start date|End date|Submission deadline|Notification|Abstract deadline|Camera ready)\s*=\s*)(?P<value>.*)$',
+        re.IGNORECASE | re.MULTILINE,
+    )
+
+    out_lines = []
+    for line in text.splitlines():
+        m = FIELD_PATTERN.match(line)
+        if not m:
+            out_lines.append(line)
+            continue
+
+        prefix = m.group("prefix")
+        raw_val = m.group("value").strip()
+
+        if raw_val == "":
+            continue
+
+        parsed = try_parse_date(raw_val)
+
+        if parsed is None:
+            continue
+
+        normalized = parsed.strftime("%Y-%m-%d")
+        out_lines.append(f"{prefix}{normalized}")
+
+    return "\n".join(out_lines)
