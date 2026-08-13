@@ -39,7 +39,7 @@ Formatting rules:
   - Type must be one of Conference, Workshop, Tutorial, Symposium
   - Series must be abbreviation of event series, e.g. ICWE
   - Field must be a primary scientific field of the event
-  - Dates keys (Start date, End date, Submission deadline, Abstract deadline, Notification, Camera ready) must use YYYY/MM/DD format.
+  - Dates keys (Start date, End date, Submission deadline, Abstract deadline, Notification, Camera ready) must use YYYY-MM-DD format.
   - Keys (Has host organization, has general chair, has program chair) must be names of organizations or persons.
   - Keys (Submitted papers, Accepted papers, Accepted short papers) must be positive integer and cannot be zero or unknown. Ignore them for future or upcoming events. 
   - If value of key is unknown or cannot be reliably determined with full confidence then remove that key entirely.

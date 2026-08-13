@@ -129,7 +129,7 @@ def get_page_wikitext(title):
     return revs[0]["*"] if revs else ""
 
 llm_prompt6 = """
-Task:: Find the following information (Acronym, Title, Ordinal, Series, Type, Field, Start date YYYY/MM/DD, End date YYYY/MM/DD, Submission deadline YYYY/MM/DD, Homepage URL, City, State, Country, Abstract deadline YYYY/MM/DD, Notification YYYY/MM/DD, Camera ready YYYY/MM/DD, Has host organization, Has general chair, Has program chair, Submitted papers, Accepted papers, Accepted short papers) about the event {TITLE} ({SERIES_NAME} {TARGET_YEAR}) of year {TARGET_YEAR}.
+Task:: Find the following information (Acronym, Title, Ordinal, Series, Type, Field, Start date YYYY-MM-DD, End date YYYY-MM-DD, Submission deadline YYYY-MM-DD, Homepage URL, City, State, Country, Abstract deadline YYYY-MM-DD, Notification YYYY-MM-DD, Camera ready YYYY-MM-DD, Has host organization, Has general chair, Has program chair, Submitted papers, Accepted papers, Accepted short papers) about the event {TITLE} ({SERIES_NAME} {TARGET_YEAR}) of year {TARGET_YEAR}.
 
 Evidence and sources requirements::
   1. Search the official event website first, then the conference proceedings (publisher pages / DBLP), then community trackers (OpenAccept, CS Conference Stats) to gather evidence.
@@ -142,7 +142,7 @@ Evidence and sources requirements::
     2. The JSON object must contain only the event keys (only those that could be reliably determined), plus two additional fields:
        a. "evidence": an object mapping each included event key to a list of one or more evidence URLs used to determine that key's value.
        b. "sources": a list of unique evidence URLs (one per entry) that together support the JSON values; this list must equal the union of all URLs appearing in the "evidence" lists.
-    3. Dates must use YYYY/MM/DD format.
+    3. Dates must use YYYY-MM-DD format.
     4. If a key value is unknown or cannot be reliably determined, omit that key entirely from the JSON object (do not include it with null or empty values).
     5. If a key is present, its entry in the "evidence" object must be a non-empty list of full URLs (each starting with http:// or https://) that directly support that key's value.
     6. The "sources" list must contain only full URLs (one per list item) and must include every URL referenced in "evidence".

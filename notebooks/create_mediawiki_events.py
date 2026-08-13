@@ -213,7 +213,7 @@ Update semantic mediawiki page in OpenResearch.org for the next edition of the {
 
 llm_prompt2 = """Search the web for information about the next edition of the conference series {SERIES_NAME} in {TARGET_YEAR}.
 Produce only the Semantic MediaWiki page code using the following Event template. The output must start with two opening curly braces "{{Event" and end with two closing curly braces "}}". Do not add any text before or after the template.
-Fill fields with best-known values (Acronym, Title, Ordinal, Series, Type, Field, Start date YYYY/MM/DD, End date YYYY/MM/DD, Submission deadline YYYY/MM/DD, Homepage URL, City, Country, Abstract deadline, Notification, Camera ready, Has host organization, has general chair, has program chair, Submitted papers, Accepted papers, Accepted short papers).
+Fill fields with best-known values (Acronym, Title, Ordinal, Series, Type, Field, Start date YYYY-MM-DD, End date YYYY-MM-DD, Submission deadline YYYY-MM-DD, Homepage URL, City, Country, Abstract deadline, Notification, Camera ready, Has host organization, has general chair, has program chair, Submitted papers, Accepted papers, Accepted short papers).
 If a field is unknown, leave it blank but keep the field present.
 
 Use the example for conference series ICWE 2024 below as the exact format to produce:
@@ -244,7 +244,7 @@ Use the example for conference series ICWE 2024 below as the exact format to pro
 """
 
 llm_prompt3 = """
-Task:: Find the given information (Acronym, Title, Ordinal, Series, Type, Field, Start date YYYY/MM/DD, End date YYYY/MM/DD, Submission deadline YYYY/MM/DD, Homepage URL, City, Country, Abstract deadline, Notification, Camera ready, Has host organization, has general chair, has program chair, Submitted papers, Accepted papers, Accepted short papers) about the event {TITLE} ({SERIES_NAME} {TARGET_YEAR}) of year {TARGET_YEAR} with best-known values to fill fields of the event template.
+Task:: Find the given information (Acronym, Title, Ordinal, Series, Type, Field, Start date YYYY-MM-DD, End date YYYY-MM-DD, Submission deadline YYYY-MM-DD, Homepage URL, City, Country, Abstract deadline, Notification, Camera ready, Has host organization, has general chair, has program chair, Submitted papers, Accepted papers, Accepted short papers) about the event {TITLE} ({SERIES_NAME} {TARGET_YEAR}) of year {TARGET_YEAR} with best-known values to fill fields of the event template.
        You can search the official event website, the conference or event proceedings (publisher page / DBLP), and community trackers (OpenAccept, CS conference stats) to get event general information and submission statistics.
        If a field of template is unknown or not determined, then remove the field completely. The output template must start with two opening curly braces "{{Event" and end with two closing curly braces "}}". Do not add any reasoning, explanatory text before, after and inside the template, surrounding code fences, and additional keys.
 
@@ -287,13 +287,13 @@ Ordinal: Ordinal of the event e.g. 1 for 1st.
 Series: Abbreviation of event series, in case the event belongs to a continuing series
 Type: Type of event e.g. "Conference", "Workshop", "Symposium", "Tutorial" etc.
 Field: Primary scientific field of the event
-Start date: Start date of the event in YYYY/MM/DD format
+Start date: Start date of the event in YYYY-MM-DD format
 End date: End date of the event in YYYY/MM/
-Submission deadline: General deadline for (most relevant kinds of) submissions in YYYY/MM/DD format
+Submission deadline: General deadline for (most relevant kinds of) submissions in YYYY-MM-DD format
 Homepage: Official homepage URL of the event
 City: City of the event
 Country: Country of the event
-Abstract deadline: Abstract deadline of the event in YYYY/MM/DD format
+Abstract deadline: Abstract deadline of the event in YYYY-MM-DD format
 Notification: Notification date of the event
 Camera ready: Camera ready date of the event
 Has host organization: Host organization of the event
@@ -331,7 +331,7 @@ Example Template:
 
 
 The output must start with two opening curly braces "{{Event" and end with two closing curly braces "}}". Do not add any text before or after the template.
-Fill fields ((Acronym, Title, Ordinal, Series, Type, Field, Start date YYYY/MM/DD, End date YYYY/MM/DD, Submission deadline YYYY/MM/DD, Homepage URL, City, Country, Abstract deadline, Notification, Camera ready, Has host organization, has general chair, has program chair, Submitted papers, Accepted papers, Accepted short papers)) with best-known values.
+Fill fields ((Acronym, Title, Ordinal, Series, Type, Field, Start date YYYY-MM-DD, End date YYYY-MM-DD, Submission deadline YYYY-MM-DD, Homepage URL, City, Country, Abstract deadline, Notification, Camera ready, Has host organization, has general chair, has program chair, Submitted papers, Accepted papers, Accepted short papers)) with best-known values.
 Search the official conference website, the conference proceedings (publisher page / DBLP), and community trackers (OpenAccept, CS conference stats) to get total submitted papers and total accepted papers.
 If a field is unknown or not determined, then remove the field completely.
 
@@ -351,7 +351,7 @@ Formatting rules:
   - Type must be one of Conference, Workshop, Tutorial, Symposium
   - Series must be abbreviation of event series, e.g. ICWE
   - Field must be a primary scientific field of the event
-  - Dates keys (Start date, End date, Submission deadline, Abstract deadline, Notification, Camera ready) must use YYYY/MM/DD format.
+  - Dates keys (Start date, End date, Submission deadline, Abstract deadline, Notification, Camera ready) must use YYYY-MM-DD format.
   - Keys (Has host organization, has general chair, has program chair) must be names of organizations or persons.
   - Keys (Submitted papers, Accepted papers, Accepted short papers) must be positive integer.
   - If value of key is unknown or cannot be reliably determined with full confidence then remove that key entirely.
