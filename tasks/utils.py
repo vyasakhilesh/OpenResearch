@@ -1,4 +1,4 @@
-from typing import Dict, Optional, List, Any
+from typing import Dict, Optional, List, Any, Tuple
 from prefect import task
 import re
 from datetime import datetime, timezone
@@ -496,3 +496,12 @@ def normalize_event_dates(text: str) -> str:
         out_lines.append(f"{prefix}{normalized}")
 
     return "\n".join(out_lines)
+
+def extract_acronym_year(s: str) -> Optional[Tuple[str, str]]:
+    s = s.strip()
+    # Accept letters for acronym, optional separator (- or _), then exactly 4 digits for year
+    m = re.match(r'^([A-Za-z0-9-_\s]+)[\-_]?(\d{4})$', s)
+    if not m:
+        return None
+    acronym, year = m.group(1).strip().strip('-').strip('_'), m.group(2)
+    return ' '.join([acronym, year])
