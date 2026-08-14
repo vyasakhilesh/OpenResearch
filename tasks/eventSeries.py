@@ -229,16 +229,17 @@ def deduplicate_openresearch_eventSeries(
         pending = deque()
         with ThreadPoolExecutor(max_workers=max_workers) as ex:
             for i, (a, b) in enumerate(combinations(page_titles, 2)):
-                logger.info(f"Submitting comparison {i}: {a} vs {b}")
-                pending.append(ex.submit(comparing_titles, api_url, session, a, b))
+                if i > 2000000 and i < 2500000:
+                    logger.info(f"Submitting comparison {i}: {a} vs {b}")
+                    pending.append(ex.submit(comparing_titles, api_url, session, a, b))
 
-                # keep only up to max_workers futures queued to limit memory and in-flight requests
-                if len(pending) >= max_workers:
-                    fut = pending.popleft()
-                    try:
-                        fut.result()
-                    except Exception:
-                        logger.exception("Error while comparing pages")
+                    # keep only up to max_workers futures queued to limit memory and in-flight requests
+                    if len(pending) >= max_workers:
+                        fut = pending.popleft()
+                        try:
+                            fut.result()
+                        except Exception:
+                            logger.exception("Error while comparing pages")
 
             # wait for remaining futures
             while pending:
