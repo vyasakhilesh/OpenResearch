@@ -106,9 +106,10 @@ def fix_event_wikitext(api_url: str, page_titles: List[str], session, csrf_token
             summary = f"Cleaned {page_title} with new text {event_wikitext}"
             if event_wikitext != event_wikitext_org:
                 res = edit_page(api_url, page_title, event_wikitext, csrf_token, session, summary, dry_run)
-                logger.info(f"successfully edit result for page_title: {page_title}")
-            if res.get('error'):
-                logger.error("Edit result for page_title %s: result: %s", page_title, res['error']['code'])
+                if res.get('error'):
+                    logger.error("Edit result for page_title %s: result: %s", page_title, res['error']['code'])
+                else:
+                    logger.info(f"successfully edit result for page_title: {page_title}")
         except Exception as e:
             logger.error("Get Event Wikitext Exception for %s: %s", page_title, e)
             continue
