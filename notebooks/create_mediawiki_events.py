@@ -213,7 +213,7 @@ Update semantic mediawiki page in OpenResearch.org for the next edition of the {
 
 llm_prompt2 = """Search the web for information about the next edition of the conference series {SERIES_NAME} in {TARGET_YEAR}.
 Produce only the Semantic MediaWiki page code using the following Event template. The output must start with two opening curly braces "{{Event" and end with two closing curly braces "}}". Do not add any text before or after the template.
-Fill fields with best-known values (Acronym, Title, Ordinal, Series, Type, Field, Start date YYYY-MM-DD, End date YYYY-MM-DD, Submission deadline YYYY-MM-DD, Homepage URL, City, Country, Abstract deadline, Notification, Camera ready, Has host organization, has general chair, has program chair, Submitted papers, Accepted papers, Accepted short papers).
+Fill fields with best-known values (Acronym, Title, Ordinal, Series, Type, Field, Start date YYYY-MM-DD, End date YYYY-MM-DD, Submission deadline YYYY-MM-DD, Homepage, City, Country, Abstract deadline, Notification, Camera ready, Has host organization, has general chair, has program chair, Submitted papers, Accepted papers, Accepted short papers).
 If a field is unknown, leave it blank but keep the field present.
 
 Use the example for conference series ICWE 2024 below as the exact format to produce:
@@ -244,7 +244,7 @@ Use the example for conference series ICWE 2024 below as the exact format to pro
 """
 
 llm_prompt3 = """
-Task:: Find the given information (Acronym, Title, Ordinal, Series, Type, Field, Start date YYYY-MM-DD, End date YYYY-MM-DD, Submission deadline YYYY-MM-DD, Homepage URL, City, Country, Abstract deadline, Notification, Camera ready, Has host organization, has general chair, has program chair, Submitted papers, Accepted papers, Accepted short papers) about the event {TITLE} ({SERIES_NAME} {TARGET_YEAR}) of year {TARGET_YEAR} with best-known values to fill fields of the event template.
+Task:: Find the given information (Acronym, Title, Ordinal, Series, Type, Field, Start date YYYY-MM-DD, End date YYYY-MM-DD, Submission deadline YYYY-MM-DD, Homepage, City, Country, Abstract deadline, Notification, Camera ready, Has host organization, has general chair, has program chair, Submitted papers, Accepted papers, Accepted short papers) about the event {TITLE} ({SERIES_NAME} {TARGET_YEAR}) of year {TARGET_YEAR} with best-known values to fill fields of the event template.
        You can search the official event website, the conference or event proceedings (publisher page / DBLP), and community trackers (OpenAccept, CS conference stats) to get event general information and submission statistics.
        If a field of template is unknown or not determined, then remove the field completely. The output template must start with two opening curly braces "{{Event" and end with two closing curly braces "}}". Do not add any reasoning, explanatory text before, after and inside the template, surrounding code fences, and additional keys.
 
@@ -331,14 +331,14 @@ Example Template:
 
 
 The output must start with two opening curly braces "{{Event" and end with two closing curly braces "}}". Do not add any text before or after the template.
-Fill fields ((Acronym, Title, Ordinal, Series, Type, Field, Start date YYYY-MM-DD, End date YYYY-MM-DD, Submission deadline YYYY-MM-DD, Homepage URL, City, Country, Abstract deadline, Notification, Camera ready, Has host organization, has general chair, has program chair, Submitted papers, Accepted papers, Accepted short papers)) with best-known values.
+Fill fields ((Acronym, Title, Ordinal, Series, Type, Field, Start date YYYY-MM-DD, End date YYYY-MM-DD, Submission deadline YYYY-MM-DD, Homepage, City, Country, Abstract deadline, Notification, Camera ready, Has host organization, has general chair, has program chair, Submitted papers, Accepted papers, Accepted short papers)) with best-known values.
 Search the official conference website, the conference proceedings (publisher page / DBLP), and community trackers (OpenAccept, CS conference stats) to get total submitted papers and total accepted papers.
 If a field is unknown or not determined, then remove the field completely.
 
 """
 
 llm_prompt5 = """
-Task:: Find the given information (Acronym, Title, Ordinal, Series, Type, Field, Start date, End date, Submission deadline, Homepage URL, City, Country, Abstract deadline, Notification, Camera ready, Has host organization, has general chair, has program chair, Submitted papers, Accepted papers, Accepted short papers) about the event {TITLE} ({SERIES_NAME} {TARGET_YEAR}) of year {TARGET_YEAR} with best-known values to fill keys of the event template.
+Task:: Find the given information (Acronym, Title, Ordinal, Series, Type, Field, Start date, End date, Submission deadline, Homepage, City, Country, Abstract deadline, Notification, Camera ready, Has host organization, has general chair, has program chair, Submitted papers, Accepted papers, Accepted short papers) about the event {TITLE} ({SERIES_NAME} {TARGET_YEAR}) of year {TARGET_YEAR} with best-known values to fill keys of the event template.
 You must search the official event website, the conference proceedings (publisher pages / DBLP / https://dblp.org/), and community trackers (OpenAccept, CS conference stats) to gather evidence. For each key you include, provide a single best-known value.
 Output requirements::
   1. Produce the filled template exactly in wiki key format starting with two opening curly braces "{{Event" and ending with two closing curly braces "}}".

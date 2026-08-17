@@ -23,7 +23,7 @@ def build_create_event_prompt(
     target_year: Optional[int],
 ) -> str:
     
-    prompt = f"""You are an information-extraction agent. Find the given information (Acronym, Title, Ordinal, Series, Type, Field, Start date, End date, Submission deadline, Homepage URL, City, Country, Abstract deadline, Notification, Camera ready, Has host organization, has general chair, has program chair, Submitted papers, Accepted papers, Accepted short papers) about the event {series_title} ({acronym} {target_year}) of year {target_year} with best-known values to fill keys of the event template.
+    prompt = f"""You are an information-extraction agent. Find the given information (Acronym, Title, Ordinal, Series, Type, Field, Start date, End date, Submission deadline, Homepage, City, Country, Abstract deadline, Notification, Camera ready, Has host organization, has general chair, has program chair, Submitted papers, Accepted papers, Accepted short papers) about the event {series_title} ({acronym} {target_year}) of year {target_year} with best-known values to fill keys of the event template.
 You must search the official event website, the conference proceedings (publisher pages / DBLP / https://dblp.org/), and community trackers (OpenAccept, CS conference stats) to gather evidence. For each key you include, provide a single best-known value.
 
 Output requirements::

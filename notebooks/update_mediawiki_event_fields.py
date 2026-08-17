@@ -129,7 +129,7 @@ def get_page_wikitext(title):
     return revs[0]["*"] if revs else ""
 
 llm_prompt6 = """
-Task:: Find the following information (Acronym, Title, Ordinal, Series, Type, Field, Start date YYYY-MM-DD, End date YYYY-MM-DD, Submission deadline YYYY-MM-DD, Homepage URL, City, State, Country, Abstract deadline YYYY-MM-DD, Notification YYYY-MM-DD, Camera ready YYYY-MM-DD, Has host organization, Has general chair, Has program chair, Submitted papers, Accepted papers, Accepted short papers) about the event {TITLE} ({SERIES_NAME} {TARGET_YEAR}) of year {TARGET_YEAR}.
+Task:: Find the following information (Acronym, Title, Ordinal, Series, Type, Field, Start date YYYY-MM-DD, End date YYYY-MM-DD, Submission deadline YYYY-MM-DD, Homepage, City, State, Country, Abstract deadline YYYY-MM-DD, Notification YYYY-MM-DD, Camera ready YYYY-MM-DD, Has host organization, Has general chair, Has program chair, Submitted papers, Accepted papers, Accepted short papers) about the event {TITLE} ({SERIES_NAME} {TARGET_YEAR}) of year {TARGET_YEAR}.
 
 Evidence and sources requirements::
   1. Search the official event website first, then the conference proceedings (publisher pages / DBLP), then community trackers (OpenAccept, CS Conference Stats) to gather evidence.
@@ -149,7 +149,7 @@ Evidence and sources requirements::
     7. Do not repeat URLs inside the "sources" list; each URL must appear only once.
     8. Name fields (Has host organization, Has general chair, Has program chair) must be string.
     9. Numeric fields (Submitted papers, Accepted papers, Accepted short papers, Ordinal) must be integers.
-    10. URL fields (e.g., Homepage URL) must be full URLs starting with http:// or https://.
+    10. URL fields (e.g., Homepage) must be full URLs starting with http:// or https://.
     11. Provide only one best-known value per key.
     12. Do not include any other text, commentary, or metadata before, inside, or after the JSON object.
 
