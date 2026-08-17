@@ -505,3 +505,32 @@ def extract_acronym_year(s: str) -> Optional[Tuple[str, str]]:
         return None
     acronym, year = m.group(1).strip().strip('-').strip('_'), m.group(2)
     return ' '.join([acronym, year])
+
+def normalize_url(value: str) -> str:
+    v = value.strip()
+    if not v:
+        return ''
+    if re.match(r'^[a-zA-Z][a-zA-Z0-9+\-.]*://', v):
+        return v
+    # protocol-relative
+    if v.startswith('//'):
+        return 'http:' + v
+    return 'http://' + v
+
+def normalize_homepage(text: str) -> str:
+    line_re = re.compile(r'^\s*\|\s*(homepage(?:\s+url)?)\s*=\s*(.*)$', re.IGNORECASE)
+    out_lines = []
+    for line in text.splitlines():
+        m = line_re.match(line)
+        if not m:
+            out_lines.append(line)
+            continue
+
+        raw_value = m.group(2)
+        if raw_value.strip() == '':
+            continue
+
+        fixed = normalize_url(raw_value)
+        out_lines.append(f"|Homepage={fixed}")
+
+    return "\n".join(out_lines)
