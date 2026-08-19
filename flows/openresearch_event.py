@@ -17,7 +17,7 @@ def openresearch_event(api_url: str,
     
     
     # preprocessing open research event pages using core data details
-    preprocessing_openresearch_events(api_url, 
+    preprocessing_openresearch_events(api_url,
                                       username,
                                       password,
                                       core_all_details_path,
@@ -62,7 +62,7 @@ if __name__ == "__main__":
                         PASS,
                         core_all_details_path,
                         template_name="Stand-alone event",
-                        llm_api_key=os.environ.get("OPENROUTER_API_KEY"),
+                        llm_api_key='', #os.environ.get("OPENROUTER_API_KEY"),
                         dry_run=False,
                         )
     

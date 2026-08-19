@@ -30,7 +30,8 @@ from tasks.utils import (
     clean_accepted_papers,
     clean_accepted_short_papers,
     normalize_event_dates,
-    extract_acronym_year
+    extract_acronym_year,
+    normalize_homepage
 )
 from typing import List, Dict, Optional
 import os
@@ -45,7 +46,7 @@ def build_clean_event_prompt(
     text: str,
 ) -> str:
   
-  prompt = f"""You are an information-extraction agent. Find the given information (Acronym, Title, Ordinal, Series, Type, Field, Start date, End date, Submission deadline, Homepage URL, City, Country, Abstract deadline, Notification, Camera ready, Has host organization, has general chair, has program chair, Submitted papers, Accepted papers, Accepted short papers) about the event from the given text with best-known values to fill keys of the event template.
+  prompt = f"""You are an information-extraction agent. Find the given information (Acronym, Title, Ordinal, Series, Type, Field, Start date, End date, Submission deadline, Homepage, City, Country, Abstract deadline, Notification, Camera ready, Has host organization, has general chair, has program chair, Submitted papers, Accepted papers, Accepted short papers) about the event from the given text with best-known values to fill keys of the event template.
 
 Input text:: {text}
 
@@ -102,6 +103,7 @@ def fix_event_wikitext(api_url: str, page_titles: List[str], session, csrf_token
             event_wikitext = clean_accepted_papers(event_wikitext)
             event_wikitext = clean_accepted_short_papers(event_wikitext)
             event_wikitext = normalize_event_dates(event_wikitext)
+            event_wikitext = normalize_homepage(event_wikitext)
             # summary
             summary = f"Cleaned {page_title} with new text {event_wikitext}"
             if event_wikitext != event_wikitext_org:
@@ -161,7 +163,7 @@ def fix_event_duplicates(api_url: str, page_titles: List[str], session, csrf_tok
                         create_page(api_url, new_acronym + ' (Duplicate)', new_wikitext, csrf_token, session, summary, dry_run)
                         continue
                       logger.info("Create result for page_title %s: result: %s", page_title, res['error']['code'] if res.get('error') else res)
-            elif acronym != page_title:
+            elif acronym != page_title: # and 'Duplicate' not in page_title:
                     delete_page(api_url, page_title, csrf_token, session)
                     logger.info("Deleted page %s for recreation with new page_title", page_title)
                     summary = f"created new {page_title} with text {event_wikitext}"
@@ -224,16 +226,13 @@ def preprocessing_openresearch_events(
     page_titles = get_event_pages(api_url, session, f"Category:{template_name}")
     logger.info(f"Found {len(page_titles)} pages, e.g., {page_titles[0:50]}")
     
-    # fix event duplicates and clean template using LLM if needed
-    # fix_event_duplicates(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
-    
     # fix event ordinal
     # fix_event_ordinal(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
     
     # fix event wikitext
     fix_event_wikitext(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
-
-
-
-          # time.sleep(1)
+        
+    # fix event duplicates and clean template using LLM if needed
+    # fix_event_duplicates(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
+    
     return True

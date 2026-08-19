@@ -14,7 +14,7 @@ def openresearch_eventSeries(api_url: str,
                             template_name: str = "Event series",
                             dry_run: bool = True):
     
-    
+    """
     # preprocessing open research event series pages using core data details
     preprocessing_core_openresearch_eventSeries(api_url, 
                                                 username,
@@ -32,17 +32,16 @@ def openresearch_eventSeries(api_url: str,
                                     template_name=template_name,
                                     dry_run=dry_run,
     )
-    
+    """
     
     # deduplication of open research event series pages
-    """
     deduplicate_openresearch_eventSeries(api_url,
                                         username,
                                         password,
                                         core_all_details_path,
                                         template_name=template_name,
                                         dry_run=dry_run,
-    )"""
+    )
                 
     return True
 
@@ -59,7 +58,7 @@ if __name__ == "__main__":
                              USER,
                              PASS,
                              core_all_details_path,
-                             template_name="Event series",
-                             dry_run=False,
+                             "Event series",
+                             False,
                              )
     # create_openresearch_events_flow.serve(API, USER, PASS, core_26_dict, core_23_dict, TARGET_YEARS, dry_run=False, llm_api_key=os.environ.get("OPENROUTER_API_KEY"))
