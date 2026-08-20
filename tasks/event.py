@@ -31,7 +31,8 @@ from tasks.utils import (
     clean_accepted_short_papers,
     normalize_event_dates,
     extract_acronym_year,
-    normalize_homepage
+    normalize_homepage,
+    reorder_event_template
 )
 from typing import List, Dict, Optional
 import os
@@ -79,6 +80,8 @@ def fix_event_wikitext(api_url: str, page_titles: List[str], session, csrf_token
         try:
             event_wikitext = get_page_wikitext(api_url, page_title, session)
             event_wikitext_org = event_wikitext
+            # fix event_wikitext tmplate
+            event_wikitext = reorder_event_template(event_wikitext)
             event_json = extract_event_fields_from_wikitext(event_wikitext)
             logger.debug(f"""Event Page {page_title}: Json: {event_json} event_wikitext: {event_wikitext}""")
             acronym = event_json.get("Acronym", None)
@@ -202,6 +205,7 @@ def fix_event_ordinal(api_url: str, page_titles: List[str], session, csrf_token:
                    logger.info("Edit result for page_title %s: result: %s", page_title, res['error']['code'] if res.get('error') else res)
         except Exception as e:
             logger.error("Fix Event Ordinal Exception for %s: %s", page_title, e)
+            
   
 @task(name="preprocessing-openresearch-events", description="preprocessing OpenResearch event pages using core data details")
 def preprocessing_openresearch_events(
