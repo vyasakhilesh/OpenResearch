@@ -29,7 +29,7 @@ COMMON_FORMATS = [
     "%d-%m-%y", "%m/%d/%y", "%y-%m-%d",
 ]
 
-TEMPLATE_ORDER = [
+EVENT_TEMPLATE_ORDER = [
     "Acronym", "Title", "Ordinal", "Type", "Field", "Series", "Superevent", "Homepage", "Logo",
     "Start date", "End date", "Event mode", "City", "State", "Country",
     "Abstract deadline", "Paper deadline", "Submission deadline", "Poster deadline",
@@ -38,7 +38,7 @@ TEMPLATE_ORDER = [
     "Submitted papers", "Accepted papers", "Accepted short papers"
 ]
 
-CANONICAL_MAP = { _normalize_key_case(k): k for k in TEMPLATE_ORDER }
+CANONICAL_MAP = { _normalize_key_case(k): k for k in EVENT_TEMPLATE_ORDER }
 
 KV_LINE_RE = re.compile(r'^\s*\|\s*(.+)$')
 
@@ -616,7 +616,7 @@ def reorder_event_template(text: str) -> str:
 
     # build ordered list
     ordered_items = []
-    for key in TEMPLATE_ORDER:
+    for key in EVENT_TEMPLATE_ORDER:
         if key in parsed:
             ordered_items.append((key, parsed.pop(key)))
 
