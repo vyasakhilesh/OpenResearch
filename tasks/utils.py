@@ -12,6 +12,7 @@ import Levenshtein
 from rapidfuzz import fuzz
 import re
 from typing import List, Dict, Union
+from collections import OrderedDict
 
 Number = Union[int, float]
 
@@ -27,6 +28,19 @@ COMMON_FORMATS = [
     "%d.%m.%Y", "%Y%m%d", "%d-%b-%Y", "%d-%B-%Y",
     "%d-%m-%y", "%m/%d/%y", "%y-%m-%d",
 ]
+
+TEMPLATE_ORDER = [
+    "Acronym", "Title", "Ordinal", "Type", "Field", "Series", "Superevent", "Homepage", "Logo",
+    "Start date", "End date", "Event mode", "City", "State", "Country",
+    "Abstract deadline", "Paper deadline", "Submission deadline", "Poster deadline",
+    "Demo deadline", "Workshop deadline", "Tutorial deadline", "Notification",
+    "Camera ready", "Attendance fee", "Reduced attendance fee", "Attendance fee currency",
+    "Submitted papers", "Accepted papers", "Accepted short papers"
+]
+
+CANONICAL_MAP = { _normalize_key_case(k): k for k in TEMPLATE_ORDER }
+
+KV_LINE_RE = re.compile(r'^\s*\|\s*(.+)$')
 
 
 def extract_numbers(text: str) -> List[Dict[str, Number]]:
@@ -534,3 +548,88 @@ def normalize_homepage(text: str) -> str:
         out_lines.append(f"|Homepage={fixed}")
 
     return "\n".join(out_lines)
+
+def _normalize_key_case(k: str) -> str:
+    return re.sub(r'\s+', ' ', k.strip()).casefold()
+
+def _find_event_block_bounds(text: str):
+    start = text.find("{{Event")
+    if start == -1:
+        return None, None
+    i = start
+    stack = []
+    while i < len(text) - 1:
+        pair = text[i:i+2]
+        if pair == "{{":
+            stack.append(i)
+            i += 2
+            continue
+        if pair == "}}":
+            if not stack:
+                i += 2
+                continue
+            stack.pop()
+            i += 2
+            if not stack:
+                return start, i
+            continue
+        i += 1
+    return start, None
+
+def reorder_event_template(text: str) -> str:
+    start, end = _find_event_block_bounds(text)
+    if start is None or end is None:
+        return text
+
+    before = text[:start]
+    block = text[start:end]  # opening {{Event ... and closing }}
+    after = text[end:]
+
+    inner = block[len("{{Event"):].rstrip("}").strip()
+    lines = inner.splitlines()
+
+    parsed = OrderedDict()
+    unknown_original_keys = {}
+
+    for raw in lines:
+        m = KV_LINE_RE.match(raw)
+        if not m:
+            continue
+        kv = m.group(1)
+        # split at the first '='
+        if '=' in kv:
+            key_part, val_part = kv.split('=', 1)
+            key = key_part.strip()
+            val = val_part.strip()
+        else:
+            key = kv.strip()
+            val = ""
+        if val == "":
+            continue
+        norm = _normalize_key_case(key)
+        if norm in CANONICAL_MAP:
+            canonical = CANONICAL_MAP[norm]
+            parsed[canonical] = val
+        else:
+            clean_key = re.sub(r'\s+', ' ', key.strip())
+            unknown_original_keys[clean_key] = val
+
+    # build ordered list
+    ordered_items = []
+    for key in TEMPLATE_ORDER:
+        if key in parsed:
+            ordered_items.append((key, parsed.pop(key)))
+
+    for key in list(parsed.keys()):
+        ordered_items.append((key, parsed[key]))
+
+    for key in sorted(unknown_original_keys.keys(), key=lambda s: s.casefold()):
+        ordered_items.append((key, unknown_original_keys[key]))
+
+    lines_out = ["{{Event"]
+    for k, v in ordered_items:
+        lines_out.append(f" | {k}={v}")
+    lines_out.append("}}")
+    new_block = "\n".join(lines_out)
+
+    return before + new_block + after
