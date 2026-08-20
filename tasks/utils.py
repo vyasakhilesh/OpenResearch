@@ -35,12 +35,11 @@ EVENT_TEMPLATE_ORDER = [
     "Abstract deadline", "Paper deadline", "Submission deadline", "Poster deadline",
     "Demo deadline", "Workshop deadline", "Tutorial deadline", "Notification",
     "Camera ready", "Attendance fee", "Reduced attendance fee", "Attendance fee currency",
-    "Submitted papers", "Accepted papers", "Accepted short papers"
+    "Submitted papers", "Accepted papers", "Accepted short papers", "Has host organization", 
+    "Has coordinator", "has general chair",
+    "has program chair", "has workshop chair", "has OC member",
+    "has tutorial chair","has demo chair", "Has PC member"
 ]
-
-CANONICAL_MAP = { _normalize_key_case(k): k for k in EVENT_TEMPLATE_ORDER }
-
-KV_LINE_RE = re.compile(r'^\s*\|\s*(.+)$')
 
 
 def extract_numbers(text: str) -> List[Dict[str, Number]]:
@@ -577,6 +576,10 @@ def _find_event_block_bounds(text: str):
     return start, None
 
 def reorder_event_template(text: str) -> str:
+    # canonical map
+    CANONICAL_MAP = { _normalize_key_case(k): k for k in EVENT_TEMPLATE_ORDER }
+    KV_LINE_RE = re.compile(r'^\s*\|\s*(.+)$')
+    
     start, end = _find_event_block_bounds(text)
     if start is None or end is None:
         return text
@@ -628,7 +631,7 @@ def reorder_event_template(text: str) -> str:
 
     lines_out = ["{{Event"]
     for k, v in ordered_items:
-        lines_out.append(f" | {k}={v}")
+        lines_out.append(f"|{k}={v}")
     lines_out.append("}}")
     new_block = "\n".join(lines_out)
 
