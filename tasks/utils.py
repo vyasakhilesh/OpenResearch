@@ -36,9 +36,9 @@ EVENT_TEMPLATE_ORDER = [
     "Demo deadline", "Workshop deadline", "Tutorial deadline", "Notification",
     "Camera ready", "Attendance fee", "Reduced attendance fee", "Attendance fee currency",
     "Submitted papers", "Accepted papers", "Accepted short papers", "Has host organization", 
-    "Has coordinator", "has general chair",
-    "has program chair", "has workshop chair", "has OC member",
-    "has tutorial chair","has demo chair", "Has PC member"
+    "Has coordinator", "Has general chair",
+    "Has program chair", "Has workshop chair", "Has OC member",
+    "Has tutorial chair","Has demo chair", "Has PC member", "Has Keynote speaker"
 ]
 
 
