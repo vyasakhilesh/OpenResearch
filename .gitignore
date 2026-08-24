@@ -7,4 +7,4 @@ test.ipynb
 export_env.sh
 invoices
 output.txt
-nohup.out
+nohup*.out
