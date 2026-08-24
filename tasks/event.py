@@ -32,7 +32,8 @@ from tasks.utils import (
     normalize_event_dates,
     extract_acronym_year,
     normalize_homepage,
-    reorder_event_template
+    reorder_event_template,
+    replace_twitter_with_x
 )
 from typing import List, Dict, Optional
 import os
@@ -107,6 +108,8 @@ def fix_event_wikitext(api_url: str, page_titles: List[str], session, csrf_token
             event_wikitext = clean_accepted_short_papers(event_wikitext)
             event_wikitext = normalize_event_dates(event_wikitext)
             event_wikitext = normalize_homepage(event_wikitext)
+            # replace "Twitter account" with "X account" string
+            # event_wikitext = replace_twitter_with_x(event_wikitext)
             # summary
             summary = f"Cleaned {page_title} with new text {event_wikitext}"
             if event_wikitext != event_wikitext_org:
@@ -187,6 +190,7 @@ def fix_event_duplicates(api_url: str, page_titles: List[str], session, csrf_tok
 def fix_event_ordinal(api_url: str, page_titles: List[str], session, csrf_token: str, llm_api_key: Optional[str], dry_run: bool, logger):
     for idx, page_title in enumerate(page_titles):  # limit to first 10 for testing
         logger.info(f"Processing page {idx}:{page_title}")
+        # if '2027' in page_title:
         try:
             event_wikitext = get_page_wikitext(api_url, page_title, session)
             event_json = extract_event_fields_from_wikitext(event_wikitext)
@@ -195,16 +199,18 @@ def fix_event_ordinal(api_url: str, page_titles: List[str], session, csrf_token:
             ordinal = event_json.get("Ordinal", None)
             logger.debug(f"Template block for {page_title}: {tpl}")
             if ordinal:
-               # extract number from ordinal string e.g. 15th => 15, 1st => 1, 2nd => 2, 3rd => 3, 4th => 4
-               ordinal_number = int(''.join(filter(str.isdigit, ordinal)))
-               if str(ordinal_number) != str(ordinal) and ordinal_number > 0:
-                   logger.info("Fixing ordinal for page_title: %s, ordinal: %s", page_title, ordinal)
-                   new_wikitext = set_multiple_params_in_template(event_wikitext, {"Ordinal": ordinal_number}, "Event")[0]
-                   summary = f"Fixed ordinal {ordinal} to {ordinal_number} for {page_title} (automated)"
-                   res = edit_page(api_url, page_title, new_wikitext, csrf_token, session, summary, dry_run)
-                   logger.info("Edit result for page_title %s: result: %s", page_title, res['error']['code'] if res.get('error') else res)
+            # extract number from ordinal string e.g. 15th => 15, 1st => 1, 2nd => 2, 3rd => 3, 4th => 4
+                ordinal_number = int(''.join(filter(str.isdigit, ordinal)))
+                if str(ordinal_number) != str(ordinal) and ordinal_number > 0:
+                    logger.info("Fixing ordinal for page_title: %s, ordinal: %s", page_title, ordinal)
+                    new_wikitext = set_multiple_params_in_template(event_wikitext, {"Ordinal": ordinal_number}, "Event")[0]
+                    summary = f"Fixed ordinal {ordinal} to {ordinal_number} for {page_title} (automated)"
+                    res = edit_page(api_url, page_title, new_wikitext, csrf_token, session, summary, dry_run)
+                    logger.info("Edit result for page_title %s: result: %s", page_title, res['error']['code'] if res.get('error') else res)
         except Exception as e:
             logger.error("Fix Event Ordinal Exception for %s: %s", page_title, e)
+        # else:
+        #    continue
             
   
 @task(name="preprocessing-openresearch-events", description="preprocessing OpenResearch event pages using core data details")
@@ -231,10 +237,10 @@ def preprocessing_openresearch_events(
     logger.info(f"Found {len(page_titles)} pages, e.g., {page_titles[0:50]}")
     
     # fix event ordinal
-    # fix_event_ordinal(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
+    fix_event_ordinal(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
     
     # fix event wikitext
-    fix_event_wikitext(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
+    # fix_event_wikitext(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
         
     # fix event duplicates and clean template using LLM if needed
     # fix_event_duplicates(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
