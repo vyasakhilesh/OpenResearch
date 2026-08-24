@@ -41,7 +41,7 @@ EVENT_TEMPLATE_ORDER = [
     "End date",
     "Submission deadline",
     "Homepage",
-    "Twitter account",
+    "X account",
     "Logo",
     "Event mode",
     "City",
@@ -680,3 +680,12 @@ def reorder_event_template(text: str) -> str:
     new_block = "\n".join(lines_out)
 
     return before + new_block + after
+
+def replace_twitter_with_x(text: str) -> str:
+    text = re.sub(r'(^\s*\|\s*)Twitter account(\s*=)', r'\1X account\2', text, flags=re.MULTILINE | re.IGNORECASE)
+    text = re.sub(r'\{\{\{\s*Twitter account\s*(\|[^}]*)?\}\}\}', lambda m: m.group(0).replace('Twitter account', 'X account'), text)
+    text = re.sub(r'\[\[\s*Twitter account\s*::', '[[X account::', text)
+    text = text.replace('Tweets by Twitter account', 'Tweets by X account')
+    text = re.sub(r'\bTwitter account\b', 'X account', text, flags=re.IGNORECASE)
+
+    return text
