@@ -687,5 +687,4 @@ def replace_twitter_with_x(text: str) -> str:
     text = re.sub(r'\[\[\s*Twitter account\s*::', '[[X account::', text)
     text = text.replace('Tweets by Twitter account', 'Tweets by X account')
     text = re.sub(r'\bTwitter account\b', 'X account', text, flags=re.IGNORECASE)
-
     return text
