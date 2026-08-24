@@ -33,6 +33,7 @@ from tasks.utils import (
     extract_acronym_year,
     normalize_homepage,
     reorder_event_template,
+    find_event_mode,
     replace_twitter_with_x
 )
 from typing import List, Dict, Optional
@@ -111,6 +112,8 @@ def fix_event_wikitext(api_url: str, page_titles: List[str], session, csrf_token
             # replace "Twitter account" with "X account" string
             # event_wikitext = replace_twitter_with_x(event_wikitext)
             # summary
+            # fix event mode
+            event_wikitext = find_event_mode(event_wikitext)
             summary = f"Cleaned {page_title} with new text {event_wikitext}"
             if event_wikitext != event_wikitext_org:
                 res = edit_page(api_url, page_title, event_wikitext, csrf_token, session, summary, dry_run)

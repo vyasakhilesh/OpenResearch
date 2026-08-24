@@ -688,3 +688,44 @@ def replace_twitter_with_x(text: str) -> str:
     text = text.replace('Tweets by Twitter account', 'Tweets by X account')
     text = re.sub(r'\bTwitter account\b', 'X account', text, flags=re.IGNORECASE)
     return text
+
+def find_event_mode(template: str) -> str:
+    # helper to extract a field value (returns '' if not found)
+    def get_field(name: str) -> str:
+        m = re.search(rf'^\|{re.escape(name)}\s*=\s*(.*)$', template, flags=re.IGNORECASE | re.MULTILINE)
+        return m.group(1).strip() if m else ''
+
+    city = get_field('City')
+    state = get_field('State')
+    country = get_field('Country')
+
+    combined = ' '.join([city, state, country]).lower()
+
+    has_online = bool(re.search(r'\bonline\b|\bvirtual\b', combined, flags=re.IGNORECASE))
+    has_hybrid = bool(re.search(r'\bhybrid\b', combined, flags=re.IGNORECASE))
+
+    new_mode = None
+    if has_online:
+        new_mode = 'Online'
+    elif has_hybrid:
+        new_mode = 'Hybrid'
+    else:
+        if city.strip() and country.strip():
+            new_mode = 'InPerson'
+
+    if not new_mode:
+        return template
+
+    updated = template
+
+    if re.search(r'^\|Event mode\s*=.*$', updated, flags=re.IGNORECASE | re.MULTILINE):
+        updated = re.sub(r'^\|Event mode\s*=.*$', f'|Event mode={new_mode}', updated, flags=re.IGNORECASE | re.MULTILINE)
+    else:
+        updated = re.sub(r'(\n\}\})\s*$', f"\n|Event mode={new_mode}\\1", updated, flags=re.MULTILINE)
+
+    # If mode is Online, remove City, State, Country fields entirely
+    if new_mode.lower() == 'online':
+        updated = re.sub(r'^\|(City|State|Country)\s*=.*\n?', '', updated, flags=re.IGNORECASE | re.MULTILINE)
+        updated = re.sub(r'\n{3,}', '\n\n', updated)
+
+    return updated
