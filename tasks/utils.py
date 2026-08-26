@@ -731,7 +731,7 @@ def find_event_mode(template: str) -> str:
     return updated
 
 
-def left_join_templates_case_insensitive(left_text: str, right_text: str, template_name: str = "Event") -> str:
+def destination_join_templates_case_insensitive(source_text: str, destination_text: str, template_name: str = "Event") -> str:
     def extract_template_block(text: str, template_name: str) -> Optional[Tuple[str, int, int]]:
         template_name = re.escape(template_name)
         pattern = rf'{{{{\s*{template_name}\b(.*?)}}}}'
@@ -761,44 +761,44 @@ def left_join_templates_case_insensitive(left_text: str, right_text: str, templa
         return f'{{{{{template_name}\n{inner}\n}}}}'
 
 
-    left_block = extract_template_block(left_text, template_name)
-    if not left_block:
-        return left_text
+    destination_block = extract_template_block(destination_text, template_name)
+    if not destination_block:
+        return destination_text
 
-    right_block = extract_template_block(right_text, template_name)
-    left_inner, lstart, lend = left_block
-    right_inner = right_block[0] if right_block else ''
+    source_block = extract_template_block(source_text, template_name)
+    destination_inner, lstart, lend = destination_block
+    source_inner = source_block[0] if source_block else ''
 
-    left_fields = parse_fields_preserve_order(left_inner)
-    right_fields = parse_fields_preserve_order(right_inner)
+    destination_fields = parse_fields_preserve_order(destination_inner)
+    source_fields = parse_fields_preserve_order(source_inner)
 
     # Build lowercase-key maps for case-insensitive matching
-    left_lower_map = OrderedDict()   # lower_key -> (orig_key, value)
-    for k, v in left_fields.items():
+    destination_lower_map = OrderedDict()   # lower_key -> (orig_key, value)
+    for k, v in destination_fields.items():
         lower = k.strip().lower()
-        left_lower_map[lower] = (k, v)
+        destination_lower_map[lower] = (k, v)
 
-    right_lower_map = OrderedDict()  # lower_key -> (orig_key, value)
-    for k, v in right_fields.items():
+    source_lower_map = OrderedDict()  # lower_key -> (orig_key, value)
+    for k, v in source_fields.items():
         lower = k.strip().lower()
-        right_lower_map[lower] = (k, v)
+        source_lower_map[lower] = (k, v)
 
     merged = OrderedDict()
 
     # Keep left order and casing; if left value empty, take from right (case-insensitive)
-    for lower, (orig_k, orig_v) in left_lower_map.items():
+    for lower, (orig_k, orig_v) in destination_lower_map.items():
         if orig_v != '':
             merged[orig_k] = orig_v
         else:
             # take from right if available
-            right_entry = right_lower_map.get(lower)
-            merged[orig_k] = right_entry[1] if right_entry else orig_v
+            source_entry = source_lower_map.get(lower)
+            merged[orig_k] = source_entry[1] if source_entry else orig_v
 
     # Append right-only fields (case-insensitive) preserving right order and right casing
-    for lower, (orig_k, orig_v) in right_lower_map.items():
-        if lower not in left_lower_map:
+    for lower, (orig_k, orig_v) in source_lower_map.items():
+        if lower not in destination_lower_map:
             merged[orig_k] = orig_v
 
     merged_template = build_template_text(merged, template_name)
-    new_text = left_text[:lstart] + merged_template + left_text[lend:]
+    new_text = destination_text[:lstart] + merged_template + destination_text[lend:]
     return new_text
