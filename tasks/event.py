@@ -227,6 +227,7 @@ def fix_merging_of_event_templates(api_url: str, page_titles: List[str], session
             is_destination_page = page_exists(api_url, destination_title, session)
             
             if is_source_page and is_destination_page:
+                logger.info(f"Merging page {source_title} and {destination_title}")
                 source_event_wikitext = get_page_wikitext(api_url, source_title, session)
                 destination_event_wikitext = get_page_wikitext(api_url, destination_title, session)
                 event_wikitext = destination_join_templates_case_insensitive(source_event_wikitext, destination_event_wikitext)      
@@ -238,6 +239,9 @@ def fix_merging_of_event_templates(api_url: str, page_titles: List[str], session
                     else:
                         logger.info(f"successfully edit result for page_title: {destination_title}")
                         delete_page(api_url, source_title, csrf_token, session)
+                elif event_wikitext == destination_event_wikitext:
+                    logger.info(f"No update for page_title: {destination_title} deleting duplicate page {source_title}")
+                    delete_page(api_url, source_title, csrf_token, session)
         except Exception as e:
             logger.error("Get Event Wikitext Exception for %s: %s", source_title, destination_title, e)
             continue    
