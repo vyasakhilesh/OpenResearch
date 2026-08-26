@@ -729,3 +729,76 @@ def find_event_mode(template: str) -> str:
         updated = re.sub(r'\n{3,}', '\n\n', updated)
 
     return updated
+
+
+def left_join_templates_case_insensitive(left_text: str, right_text: str, template_name: str = "Event") -> str:
+    def extract_template_block(text: str, template_name: str) -> Optional[Tuple[str, int, int]]:
+        template_name = re.escape(template_name)
+        pattern = rf'{{{{\s*{template_name}\b(.*?)}}}}'
+        TEMPLATE_RE = re.compile(pattern, re.DOTALL | re.IGNORECASE)
+        m = TEMPLATE_RE.search(text)
+        if not m:
+            return None
+        return m.group(1), m.start(), m.end()
+
+    def parse_fields_preserve_order(block_inner: str) -> OrderedDict:
+        """
+        Returns OrderedDict of original_key -> value in the order found.
+        """
+        FIELD_RE = re.compile(r'^\s*\|\s*([^=|]+?)\s*=\s*(.*?)\s*$', re.MULTILINE)
+        fields = OrderedDict()
+        for fm in FIELD_RE.finditer(block_inner):
+            key = fm.group(1).strip()
+            value = fm.group(2).strip()
+            fields[key] = value
+        return fields
+
+    def build_template_text(fields: OrderedDict, template_name: str) -> str:
+        lines = []
+        for k, v in fields.items():
+            lines.append(f'|{k}={v}')
+        inner = '\n'.join(lines)
+        return f'{{{{{template_name}\n{inner}\n}}}}'
+
+
+    left_block = extract_template_block(left_text, template_name)
+    if not left_block:
+        return left_text
+
+    right_block = extract_template_block(right_text, template_name)
+    left_inner, lstart, lend = left_block
+    right_inner = right_block[0] if right_block else ''
+
+    left_fields = parse_fields_preserve_order(left_inner)
+    right_fields = parse_fields_preserve_order(right_inner)
+
+    # Build lowercase-key maps for case-insensitive matching
+    left_lower_map = OrderedDict()   # lower_key -> (orig_key, value)
+    for k, v in left_fields.items():
+        lower = k.strip().lower()
+        left_lower_map[lower] = (k, v)
+
+    right_lower_map = OrderedDict()  # lower_key -> (orig_key, value)
+    for k, v in right_fields.items():
+        lower = k.strip().lower()
+        right_lower_map[lower] = (k, v)
+
+    merged = OrderedDict()
+
+    # Keep left order and casing; if left value empty, take from right (case-insensitive)
+    for lower, (orig_k, orig_v) in left_lower_map.items():
+        if orig_v != '':
+            merged[orig_k] = orig_v
+        else:
+            # take from right if available
+            right_entry = right_lower_map.get(lower)
+            merged[orig_k] = right_entry[1] if right_entry else orig_v
+
+    # Append right-only fields (case-insensitive) preserving right order and right casing
+    for lower, (orig_k, orig_v) in right_lower_map.items():
+        if lower not in left_lower_map:
+            merged[orig_k] = orig_v
+
+    merged_template = build_template_text(merged, template_name)
+    new_text = left_text[:lstart] + merged_template + left_text[lend:]
+    return new_text
