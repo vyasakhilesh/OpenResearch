@@ -34,6 +34,7 @@ from tasks.utils import (
     normalize_homepage,
     reorder_event_template,
     find_event_mode,
+    destination_join_templates_case_insensitive,
     replace_twitter_with_x
 )
 from typing import List, Dict, Optional
@@ -82,8 +83,6 @@ def fix_event_wikitext(api_url: str, page_titles: List[str], session, csrf_token
         try:
             event_wikitext = get_page_wikitext(api_url, page_title, session)
             event_wikitext_org = event_wikitext
-            # fix event_wikitext tmplate
-            event_wikitext = reorder_event_template(event_wikitext)
             event_json = extract_event_fields_from_wikitext(event_wikitext)
             logger.debug(f"""Event Page {page_title}: Json: {event_json} event_wikitext: {event_wikitext}""")
             acronym = event_json.get("Acronym", None)
@@ -114,6 +113,8 @@ def fix_event_wikitext(api_url: str, page_titles: List[str], session, csrf_token
             # summary
             # fix event mode
             event_wikitext = find_event_mode(event_wikitext)
+            # fix event_wikitext template order
+            event_wikitext = reorder_event_template(event_wikitext)
             summary = f"Cleaned {page_title} with new text {event_wikitext}"
             if event_wikitext != event_wikitext_org:
                 res = edit_page(api_url, page_title, event_wikitext, csrf_token, session, summary, dry_run)
@@ -193,7 +194,6 @@ def fix_event_duplicates(api_url: str, page_titles: List[str], session, csrf_tok
 def fix_event_ordinal(api_url: str, page_titles: List[str], session, csrf_token: str, llm_api_key: Optional[str], dry_run: bool, logger):
     for idx, page_title in enumerate(page_titles):  # limit to first 10 for testing
         logger.info(f"Processing page {idx}:{page_title}")
-        # if '2027' in page_title:
         try:
             event_wikitext = get_page_wikitext(api_url, page_title, session)
             event_json = extract_event_fields_from_wikitext(event_wikitext)
@@ -214,7 +214,33 @@ def fix_event_ordinal(api_url: str, page_titles: List[str], session, csrf_token:
             logger.error("Fix Event Ordinal Exception for %s: %s", page_title, e)
         # else:
         #    continue
+
+
+def fix_merging_of_event_templates(api_url: str, page_titles: List[str], session, csrf_token: str, llm_api_key: Optional[str], dry_run: bool, logger):
+    for idx, page_title in enumerate([page_title for page_title in page_titles if ' (Duplicate)' in page_title]):  # limit to first 10 for testing
+        logger.info(f"Processing page {idx}:{page_title}")
+        # fix duplicates and clean template using LLM if needed
+        try:
+            source_title = page_title
+            destination_title = page_title.replace(' (Duplicate)', '')
+            is_source_page = page_exists(api_url, source_title, session)                          
+            is_destination_page = page_exists(api_url, destination_title, session)
             
+            if is_source_page and is_destination_page:
+                source_event_wikitext = get_page_wikitext(api_url, source_title, session)
+                destination_event_wikitext = get_page_wikitext(api_url, destination_title, session)
+                event_wikitext = destination_join_templates_case_insensitive(source_event_wikitext, destination_event_wikitext)      
+                summary = f"updated {destination_title} with {source_title}"
+                if event_wikitext != destination_event_wikitext:
+                    res = edit_page(api_url, destination_title, event_wikitext, csrf_token, session, summary, dry_run)
+                    if res.get('error'):
+                        logger.error("Edit result for destination_title %s: result: %s", destination_title, res['error']['code'])
+                    else:
+                        logger.info(f"successfully edit result for page_title: {destination_title}")
+                        delete_page(api_url, source_title, csrf_token, session)
+        except Exception as e:
+            logger.error("Get Event Wikitext Exception for %s: %s", source_title, destination_title, e)
+            continue    
   
 @task(name="preprocessing-openresearch-events", description="preprocessing OpenResearch event pages using core data details")
 def preprocessing_openresearch_events(
@@ -240,12 +266,15 @@ def preprocessing_openresearch_events(
     logger.info(f"Found {len(page_titles)} pages, e.g., {page_titles[0:50]}")
     
     # fix event ordinal
-    fix_event_ordinal(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
+    # fix_event_ordinal(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
     
     # fix event wikitext
     # fix_event_wikitext(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
         
     # fix event duplicates and clean template using LLM if needed
     # fix_event_duplicates(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
+    
+    # fix and merge event template
+    fix_merging_of_event_templates(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
     
     return True
