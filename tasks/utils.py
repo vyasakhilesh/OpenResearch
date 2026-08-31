@@ -85,6 +85,35 @@ EVENT_TEMPLATE_ORDER = [
     "Tracks",
 ]
 
+EVENT_SERIES_TEMPLATE_ORDER = [
+    "Acronym",
+    "Title",
+    "Has Twitter",
+    "Logo",
+    "WikiDataId",
+    "DblpSeries",
+    "Has Proceedings Bibliography",
+    "Has Bibliography",
+    "Has CORE Rank",
+    "Has CORE2026 Rank",
+    "Has CORE2023 Rank",
+    "Has CORE2021 Rank",
+    "Has CORE2020 Rank",
+    "Has CORE2018 Rank",
+    "Has CORE2017 Rank",
+    "Has CORE2014 Rank",
+    "Has CORE2013 Rank",
+    "Has CORE2010 Rank",
+    "Has CORE2008 Rank",
+    "Has SC member",
+    "Field",
+    "Period",
+    "Unit",
+    "Homepage",
+    "organizer"
+]
+
+
 
 def extract_numbers(text: str) -> List[Dict[str, Number]]:
     """
@@ -619,9 +648,13 @@ def _find_event_block_bounds(text: str):
         i += 1
     return start, None
 
-def reorder_event_template(text: str) -> str:
+def reorder_event_template(text: str, template_name:str="Event") -> str:
     # canonical map
-    CANONICAL_MAP = { _normalize_key_case(k): k for k in EVENT_TEMPLATE_ORDER }
+    if template_name == "Event":
+        TEMPLATE_ORDER = EVENT_TEMPLATE_ORDER
+    elif template_name == "Event series":
+        TEMPLATE_ORDER = EVENT_SERIES_TEMPLATE_ORDER
+    CANONICAL_MAP = { _normalize_key_case(k): k for k in TEMPLATE_ORDER }
     KV_LINE_RE = re.compile(r'^\s*\|\s*(.+)$')
     
     start, end = _find_event_block_bounds(text)
@@ -631,8 +664,8 @@ def reorder_event_template(text: str) -> str:
     before = text[:start]
     block = text[start:end]  # opening {{Event ... and closing }}
     after = text[end:]
-
-    inner = block[len("{{Event"):].rstrip("}").strip()
+    start_token = "{{" + template_name
+    inner = block[len(start_token):].rstrip("}").strip()
     lines = inner.splitlines()
 
     parsed = OrderedDict()
@@ -663,7 +696,7 @@ def reorder_event_template(text: str) -> str:
 
     # build ordered list
     ordered_items = []
-    for key in EVENT_TEMPLATE_ORDER:
+    for key in TEMPLATE_ORDER:
         if key in parsed:
             ordered_items.append((key, parsed.pop(key)))
 
@@ -673,7 +706,7 @@ def reorder_event_template(text: str) -> str:
     for key in sorted(unknown_original_keys.keys(), key=lambda s: s.casefold()):
         ordered_items.append((key, unknown_original_keys[key]))
 
-    lines_out = ["{{Event"]
+    lines_out = [start_token]
     for k, v in ordered_items:
         lines_out.append(f"|{k}={v}")
     lines_out.append("}}")
