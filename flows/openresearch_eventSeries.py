@@ -1,5 +1,8 @@
 from prefect import flow
-from tasks.eventSeries import preprocessing_core_openresearch_eventSeries, create_core_openresearch_eventSeries, deduplicate_openresearch_eventSeries
+from tasks.eventSeries import (preprocessing_core_openresearch_eventSeries, 
+                               create_core_openresearch_eventSeries, 
+                               deduplicate_openresearch_eventSeries,
+                               preprocessing_openresearch_eventSeries)
 import os
 
 # PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "DEBUG")
@@ -12,6 +15,7 @@ def openresearch_eventSeries(api_url: str,
                             password: str,
                             core_all_details_path: str,
                             template_name: str = "Event series",
+                            llm_api_key: str = None,
                             dry_run: bool = True):
     
     """
@@ -35,12 +39,22 @@ def openresearch_eventSeries(api_url: str,
     """
     
     # deduplication of open research event series pages
+    """
     deduplicate_openresearch_eventSeries(api_url,
                                         username,
                                         password,
                                         core_all_details_path,
                                         template_name=template_name,
                                         dry_run=dry_run,
+    )
+    """
+    preprocessing_openresearch_eventSeries(api_url,
+                                          username,
+                                          password,
+                                          core_all_details_path,
+                                          template_name,
+                                          llm_api_key=llm_api_key,
+                                          dry_run=dry_run,
     )
                 
     return True
@@ -59,6 +73,7 @@ if __name__ == "__main__":
                              PASS,
                              core_all_details_path,
                              "Event series",
-                             False,
+                             llm_api_key='', #os.environ.get("OPENROUTER_API_KEY"),
+                             dry_run=False,
                              )
     # create_openresearch_events_flow.serve(API, USER, PASS, core_26_dict, core_23_dict, TARGET_YEARS, dry_run=False, llm_api_key=os.environ.get("OPENROUTER_API_KEY"))

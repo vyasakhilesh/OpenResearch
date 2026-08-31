@@ -230,6 +230,51 @@ def extract_event_fields_from_wikitext(text: str) -> Dict[str, Optional[str]]:
         "Ordinal": _none_if_empty(ordinal)
     }
     
+def extract_eventSeries_from_wikitext(text: str) -> Dict[str, Optional[str]]:
+    """
+    Parse a MediaWiki Event Series template block and return a dict with keys:
+    Title, Field, Acronym Values are strings or None.
+    """
+    # Match "{{Event" optionally followed by a token (e.g. "series"), then capture body up to the first "}}"
+    m = re.search(r"\{\{\s*Event\b(?:\s+([^\|\}\n]+))?(.*?\n?)\}\}", text, re.DOTALL | re.IGNORECASE)
+    if not m:
+        return {"Title": None, "Field": None, "Acronym": None,}
+
+    body = m.group(2) or ""
+
+    def _normalize_key(k: str) -> str:
+        return re.sub(r"\s+", " ", k.strip()).lower()
+
+    def _strip_quotes_and_ws(v: str) -> str:
+        v = v.strip()
+        if (v.startswith('"') and v.endswith('"')) or (v.startswith("'") and v.endswith("'")):
+            v = v[1:-1].strip()
+        return v
+
+    fields: Dict[str, str] = {}
+    for line in body.splitlines():
+        line = line.strip()
+        if not line.startswith("|"):
+            continue
+        parts = line[1:].split("=", 1)
+        if len(parts) != 2:
+            continue
+        key, val = parts
+        fields[_normalize_key(key)] = _strip_quotes_and_ws(val)
+
+    title = fields.get("title") or None
+    field = fields.get("field") or None
+    acronym = fields.get("acronym") or None
+
+    def _none_if_empty(x: Optional[str]) -> Optional[str]:
+        return x if x and x.strip() else None
+
+    return {
+        "Title": _none_if_empty(title),
+        "Acronym": _none_if_empty(acronym),
+        "Field": _none_if_empty(field),
+    }
+    
 def _normalize_key(k: str) -> str:
     return k.strip().lower()
 

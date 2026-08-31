@@ -1,6 +1,7 @@
 from prefect import get_run_logger, task
 from tasks.mw_auth import login_and_get_csrf
 from tasks.mw_api import (
+    get_event_pages,
     get_series_titles,
     get_page_wikitext,
     create_page,
@@ -8,10 +9,15 @@ from tasks.mw_api import (
     delete_page,
 )
 from tasks.mw_helper import set_multiple_params_in_template
-from tasks.utils import extract_event_fields_from_wikitext, string_similarity_levenshtein, string_similarity_rapidfuzz
+from tasks.utils import (extract_eventSeries_from_wikitext, 
+                         string_similarity_levenshtein, 
+                         string_similarity_rapidfuzz,
+                         reorder_event_template,
+                         normalize_homepage)
 import os
 import pandas as pd
 import numpy as np
+from typing import List, Dict, Optional
 
 # PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "DEBUG")
 PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "INFO")  # Set default logging level to ERROR if not specified
@@ -43,7 +49,7 @@ def preprocessing_core_openresearch_eventSeries(
         logger.info(f"Processing page {page_title}")
         try:
             series_wikitext = get_page_wikitext(api_url, page_title, session)
-            series_json = extract_event_fields_from_wikitext(series_wikitext)
+            series_json = extract_eventSeries_from_wikitext(series_wikitext)
             logger.debug(f"""Series Page {page_title}: Json: {series_json} series_wikitext: {series_wikitext}""")
             series_title = series_json.get('Title', None)
             series_acronym = series_json.get('Acronym', page_title)  # default to page_title if Acronym not found
@@ -127,7 +133,7 @@ def create_core_openresearch_eventSeries(
     for page_title in page_titles:  # limit to first 10 for testing
         try:
             series_wikitext = get_page_wikitext(api_url, page_title, session)
-            series_json = extract_event_fields_from_wikitext(series_wikitext)
+            series_json = extract_eventSeries_from_wikitext(series_wikitext)
             logger.debug(f"""Series Page {page_title}: Json: {series_json} series_wikitext: {series_wikitext}""")
             series_title = series_json.get('Title', None)
             series_acronym = series_json.get('Acronym', page_title)  # default to page_title if Acronym not found
@@ -204,11 +210,11 @@ def deduplicate_openresearch_eventSeries(
     
     def comparing_titles(api_url, session, page_title, other_page_title):
         wikitext1 = get_page_wikitext(api_url, page_title, session)
-        series_json = extract_event_fields_from_wikitext(wikitext1)
+        series_json = extract_eventSeries_from_wikitext(wikitext1)
         title1 = series_json.get('Title', page_title)
         
         wikitext2 = get_page_wikitext(api_url, other_page_title, session)
-        series_json = extract_event_fields_from_wikitext(wikitext2)
+        series_json = extract_eventSeries_from_wikitext(wikitext2)
         title2 = series_json.get('Title', other_page_title)
         
         similarity = string_similarity_levenshtein(title1, title2)
@@ -257,4 +263,67 @@ def deduplicate_openresearch_eventSeries(
     """
     compare_all_threaded(page_titles, api_url, session, max_workers=20)
                 
+    return True
+
+
+def fix_eventSeries_wikitext(api_url: str, page_titles: List[str], session, csrf_token: str, llm_api_key: Optional[str], dry_run: bool, logger):
+    for idx, page_title in enumerate(page_titles):  # limit to first 10 for testing
+        logger.info(f"Processing page {idx}:{page_title}")
+        # fix duplicates and clean template using LLM if needed
+        try:
+            eventSeries_wikitext = get_page_wikitext(api_url, page_title, session)
+            eventSeries_wikitext_org = eventSeries_wikitext
+            event_json = extract_eventSeries_from_wikitext(eventSeries_wikitext)
+            logger.debug(f"""Event Page {page_title}: Json: {event_json} eventSeries_wikitext: {eventSeries_wikitext}""")
+            acronym = event_json.get("Acronym", None)
+            # fix acronym
+            if acronym is None:
+                acronym = page_title
+                eventSeries_wikitext, changed, old_tpl = set_multiple_params_in_template(eventSeries_wikitext, {"Acronym": acronym}, "Event series", False)
+                        
+            eventSeries_wikitext = normalize_homepage(eventSeries_wikitext)
+            # replace "Twitter account" with "X account" string
+            # eventSeries_wikitext = replace_twitter_with_x(eventSeries_wikitext)
+            # summary
+            # fix eventSeries_wikitext template order
+            eventSeries_wikitext = reorder_event_template(eventSeries_wikitext, "Event series")
+            summary = f"Cleaned {page_title} with new text {eventSeries_wikitext}"
+            if eventSeries_wikitext != eventSeries_wikitext_org:
+                res = edit_page(api_url, page_title, eventSeries_wikitext, csrf_token, session, summary, dry_run)
+                if res.get('error'):
+                    logger.error("Edit result for page_title %s: result: %s", page_title, res['error']['code'])
+                else:
+                    logger.info(f"successfully edit result for page_title: {page_title}")
+        except Exception as e:
+            logger.error("Get Event Wikitext Exception for %s: %s", page_title, e)
+            continue
+            
+
+@task(name="preprocessing-openresearch-eventSeries", description="preprocessing OpenResearch event series pages")
+def preprocessing_openresearch_eventSeries(
+    api_url: str,
+    username: str,
+    password: str,
+    core_all_details_path: str,
+    template_name: str = "Stand-alone event",
+    llm_api_key: Optional[str] = None,
+    dry_run: bool = True,
+):
+    
+    logger = get_run_logger()
+    logger.setLevel(PREFECT_LOGGING_LEVEL)
+    
+    # get core_all_details dataframe
+    df_core_all_details = pd.read_csv(core_all_details_path)
+    df_core_all_details = df_core_all_details.replace(np.nan, '', regex=True)  # Replace NaN with empty string
+    csrf_token, session = login_and_get_csrf(api_url, username, password)
+        
+    # 1. collect pages
+    page_titles = get_event_pages(api_url, session, f"Category:{template_name}")
+    logger.info(f"Found {len(page_titles)} pages, e.g., {page_titles[0:60]}")
+    
+    
+    # fix event wikitext
+    fix_eventSeries_wikitext(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
+        
     return True
