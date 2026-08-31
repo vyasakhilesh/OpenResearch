@@ -13,7 +13,7 @@ PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "INFO")  # Set d
 # oldmodel = openai/gpt-5.4-mini
 # newmodel =anthropic/claude-sonnet-5
 @task(retries=1, retry_delay_seconds=5)
-def call_openrouter_task(prompt: str, api_key: str, model: str = "openai/gpt-5.4-mini", temperature: float = 0.0, max_output_tokens: int = 2000) -> Optional[dict]:
+def call_openrouter_task(prompt: str, api_key: str, model: str = "openai/gpt-5.4-mini", temperature: float = 0.1, max_output_tokens: int = 2000) -> Optional[dict]:
     logger = get_run_logger()
     logger.setLevel(PREFECT_LOGGING_LEVEL)
     if not api_key:

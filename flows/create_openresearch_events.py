@@ -23,27 +23,28 @@ def build_create_event_prompt(
     target_year: Optional[int],
 ) -> str:
     
-    prompt = f"""You are an information-extraction agent. Find the given information (Acronym, Title, Ordinal, Series, Type, Field, Start date, End date, Submission deadline, Homepage, City, Country, Abstract deadline, Notification, Camera ready, Has host organization, has general chair, has program chair, Submitted papers, Accepted papers, Accepted short papers) about the event {series_title} ({acronym} {target_year}) of year {target_year} with best-known values to fill keys of the event template.
+    prompt = f"""You are an information-extraction agent. Find the given information (Acronym, Title, Ordinal, Series, Type, Field, Start date, End date, Homepage, Event mode, City, Country, Submission deadline, Abstract deadline, Notification, Camera ready, Paper deadline, Has host organization, Has general chair, has program chair, Submitted papers, Accepted papers, Accepted short papers) about the event {series_title} ({acronym} {target_year}) of year {target_year} with best-known values to fill keys of the event template.
 You must search the official event website, the conference proceedings (publisher pages / DBLP / https://dblp.org/), and community trackers (OpenAccept, CS conference stats) to gather evidence. For each key you include, provide a single best-known value.
 
 Output requirements::
   1. Produce the filled template exactly in wiki key format starting with two opening curly braces "{{Event" and ending with two closing curly braces "}}".
   2. Immediately after the closing "}}", on a new line, include a "Sources:" section that lists one evidence URL per line. The "Sources:" section must be separated from the template by two blank lines.
   3. Do not include any other text, explanation, or commentary.
-  4. If a key's value is unknown or cannot be reliably determined with full confidence, remove that key entirely from the template.
+  4. If a key's value cannot be reliably determined with full confidence, remove that key from the template.
 Formatting rules:
   - Each template line must be of the form: |Key=Value
-  - Acronym must be abbreviation of event with year, e.g. ICWE 2024
-  - Title is full title of the given event, (e.g. 24th International Conference on Web Engineering)
-  - Ordinal of the event and it must be between 1 to 200 and must not be a year. e.g 24 for 24th event, 1 for 1st
-  - Type must be one of Conference, Workshop, Tutorial, Symposium
-  - Series must be abbreviation of event series, e.g. ICWE
-  - Field must be a primary scientific field of the event
+  - Acronym key must be abbreviation of event with year, e.g. ICWE 2024
+  - Title key is full title of the given event, (e.g. 24th International Conference on Web Engineering)
+  - Ordinal key of the event and it must be between 1 to 200 and must not be a year. e.g 24 for 24th event, 1 for 1st
+  - Type key must be one of Conference, Workshop, Tutorial, Symposium
+  - Series key must be abbreviation of event series, e.g. ICWE
+  - Field key must be a primary scientific field of the event
   - Dates keys (Start date, End date, Submission deadline, Abstract deadline, Notification, Camera ready) must use YYYY-MM-DD format.
-  - Keys (Has host organization, has general chair, has program chair) must be names of organizations or persons.
-  - Keys (Submitted papers, Accepted papers, Accepted short papers) must be positive integer and cannot be zero or unknown. Ignore them for future or upcoming events. 
-  - If value of key is unknown or cannot be reliably determined with full confidence then remove that key entirely.
-  - Prefer primary sources (official site, proceedings, DBLP, OpenAccept) and include those URLs in the Sources list.
+  - Event mode key must be either InPerson, Online or Hybrid 
+  - Keys (Has host organization, Has general chair, Has program chair) must be names of organizations or persons.
+  - Keys (Submitted papers, Accepted papers, Accepted short papers) must be positive integer. Ignore these keys for future or upcoming events. 
+  - If value of key cannot be reliably determined with full confidence then remove that key and its value.
+  - Prefer primary sources (official site, homepage, proceedings, DBLP, OpenAccept) and include those URLs in the Sources list.
 Produce only the template followed by two blank lines and then the Sources list.
 """
     return prompt
@@ -109,15 +110,15 @@ if __name__ == "__main__":
     import pandas as pd
     core_23_path = os.environ.get("CORE_2023_PATH", "CORE_2023.csv")
     core_26_path = os.environ.get("CORE_2026_PATH", "CORE_2026.csv")
-    df_core_23 = pd.read_csv(core_23_path, header=None)
-    df_core_26 = pd.read_csv(core_26_path, header=None)
-    core_23_dict = dict(zip(df_core_23[2], df_core_23[4]))
-    core_26_dict = dict(zip(df_core_26[2], df_core_26[4]))
+    df_core_23 = pd.read_csv(core_23_path, header='infer')
+    df_core_26 = pd.read_csv(core_26_path, header='infer')
+    core_23_dict = dict(zip(df_core_23['Acronym'], df_core_23['has CORE2023 Rank']))
+    core_26_dict = dict(zip(df_core_26['Acronym'], df_core_26['has CORE2026 Rank']))
     API = os.environ.get("OR_API", "https://www.openresearch.org/mediawiki/api.php")
     USER = os.environ.get("OR_USER")
     PASS = os.environ.get("OR_PASS")
     # TODO : Add a way to specify target years via environment variable or command line argument
-    TARGET_YEARS = [2027]
+    TARGET_YEARS = [2026, 2027]
     create_openresearch_events(API, USER, PASS, core_26_dict, core_23_dict, 
                                     TARGET_YEARS, dry_run=False, 
                                     llm_api_key=os.environ.get("OPENROUTER_API_KEY"))
