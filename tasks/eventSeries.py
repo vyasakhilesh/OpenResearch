@@ -274,7 +274,7 @@ def fix_eventSeries_wikitext(api_url: str, page_titles: List[str], session, csrf
             eventSeries_wikitext = get_page_wikitext(api_url, page_title, session)
             eventSeries_wikitext_org = eventSeries_wikitext
             event_json = extract_eventSeries_from_wikitext(eventSeries_wikitext)
-            logger.debug(f"""Event Page {page_title}: Json: {event_json} eventSeries_wikitext: {eventSeries_wikitext}""")
+            logger.debug(f"""Event series Page {page_title}: Json: {event_json} eventSeries_wikitext: {eventSeries_wikitext}""")
             acronym = event_json.get("Acronym", None)
             # fix acronym
             if acronym is None:
