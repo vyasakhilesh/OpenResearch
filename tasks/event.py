@@ -35,6 +35,7 @@ from tasks.utils import (
     reorder_event_template,
     find_event_mode,
     destination_join_templates_case_insensitive,
+    append_event_template_to_df,
     replace_twitter_with_x
 )
 from typing import List, Dict, Optional
@@ -280,5 +281,45 @@ def preprocessing_openresearch_events(
     
     # fix and merge event template
     fix_merging_of_event_templates(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
+    
+    return True
+
+@task(name="create-stats-openresearch-events", description="collecting statistics of OpenResearch event pages in a dataframe")
+def create_stats_openresearch_events(
+    api_url: str,
+    username: str,
+    password: str,
+    core_all_details_path: str,
+    template_name: str = "Stand-alone event",
+    llm_api_key: Optional[str] = None,
+    dry_run: bool = True,
+):
+    
+    logger = get_run_logger()
+    logger.setLevel(PREFECT_LOGGING_LEVEL)
+    
+    # get core_all_details dataframe
+    df_core_all_details = pd.read_csv(core_all_details_path)
+    df_core_all_details = df_core_all_details.replace(np.nan, '', regex=True)  # Replace NaN with empty string
+    csrf_token, session = login_and_get_csrf(api_url, username, password)
+        
+    # 1. collect pages
+    page_titles = get_event_pages(api_url, session, f"Category:{template_name}")
+    logger.info(f"Found {len(page_titles)} pages, e.g., {page_titles[0:50]}")
+    
+    # 2. collect statistics of open research event pages in a dataframe
+    df_stats_openresearch_events = pd.DataFrame()
+    for idx, page_title in enumerate(page_titles[0:10]):
+        logger.info(f"Processing page {idx}:{page_title}")
+        try:
+            event_wikitext = get_page_wikitext(api_url, page_title, session)
+            df_stats_openresearch_events = append_event_template_to_df(event_wikitext, df_stats_openresearch_events)
+        except Exception as e:
+            logger.error("Get Event Wikitext Exception for %s: %s", page_title, e)
+            continue
+    
+    # save to csv
+    stats_output_path = os.environ.get("STATS_OUTPUT_PATH", "stats_openresearch_events.csv")
+    df_stats_openresearch_events.to_csv(stats_output_path+os.sep+"stats_openresearch_events.csv", index=False)
     
     return True
