@@ -9,3 +9,4 @@ invoices
 output.txt
 nohup*.out
 mediawiki
+data/stats/
