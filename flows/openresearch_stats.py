@@ -6,7 +6,7 @@ from tasks.event import create_stats_openresearch_events
 PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "INFO")  # Set default logging level to ERROR if not specified
 
     
-@flow(name="openresearch_event", description="OpenResearch statistics tasks for event, event series etc.")
+@flow(name="openresearch_stats", description="OpenResearch statistics tasks for event, event series etc.")
 def openresearch_stats(api_url: str,
                             username: str,
                             password: str,

@@ -309,7 +309,7 @@ def create_stats_openresearch_events(
     
     # 2. collect statistics of open research event pages in a dataframe
     df_stats_openresearch_events = pd.DataFrame()
-    for idx, page_title in enumerate(page_titles[0:10]):
+    for idx, page_title in enumerate(page_titles):
         logger.info(f"Processing page {idx}:{page_title}")
         try:
             event_wikitext = get_page_wikitext(api_url, page_title, session)
@@ -320,6 +320,6 @@ def create_stats_openresearch_events(
     
     # save to csv
     stats_output_path = os.environ.get("STATS_OUTPUT_PATH", "stats_openresearch_events.csv")
-    df_stats_openresearch_events.to_csv(stats_output_path+os.sep+"stats_openresearch_events.csv", index=False)
+    df_stats_openresearch_events.to_csv(stats_output_path+"stats_openresearch_events.csv", index=False)
     
     return True
