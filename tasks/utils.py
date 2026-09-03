@@ -13,6 +13,7 @@ from rapidfuzz import fuzz
 import re
 from typing import List, Dict, Union
 from collections import OrderedDict
+import pandas as pd
 
 Number = Union[int, float]
 
@@ -850,7 +851,6 @@ def destination_join_templates_case_insensitive(source_text: str, destination_te
     destination_fields = parse_fields_preserve_order(destination_inner)
     source_fields = parse_fields_preserve_order(source_inner)
 
-    # Build lowercase-key maps for case-insensitive matching
     destination_lower_map = OrderedDict()   # lower_key -> (orig_key, value)
     for k, v in destination_fields.items():
         lower = k.strip().lower()
@@ -880,3 +880,48 @@ def destination_join_templates_case_insensitive(source_text: str, destination_te
     merged_template = build_template_text(merged, template_name)
     new_text = destination_text[:lstart] + merged_template + destination_text[lend:]
     return new_text
+
+
+def _parse_event_block(block: str) -> Dict[str, str]:
+    lines = block.strip().splitlines()
+    record: Dict[str, str] = {}
+    current_key = None
+    current_val_lines: List[str] = []
+
+    for raw in lines:
+        line = raw.rstrip()
+        if re.match(r'^\s*\|', line):
+            if current_key is not None:
+                record[current_key] = '\n'.join(current_val_lines).strip()
+            kv = line.lstrip().lstrip('|').strip()
+            if '=' in kv:
+                key, val = kv.split('=', 1)
+                current_key = key.strip()
+                current_val_lines = [val.strip()]
+            else:
+                current_key = kv.strip()
+                current_val_lines = ['']
+        else:
+            if current_key is not None:
+                current_val_lines.append(line)
+    if current_key is not None:
+        record[current_key] = '\n'.join(current_val_lines).strip()
+    return record
+
+def append_event_template_to_df(template_text: str, df: pd.DataFrame) -> pd.DataFrame:
+    _EVENT_RE = re.compile(r'\{\{Event\b(.*?)\}\}', re.DOTALL | re.IGNORECASE)
+    if template_text is None or template_text.strip() == "":
+        return df
+
+    records = []
+    for match in _EVENT_RE.findall(template_text):
+        rec = _parse_event_block(match)
+        if rec:
+            records.append(rec)
+
+    if not records:
+        return df
+
+    new_df = pd.DataFrame(records)
+    combined = pd.concat([df, new_df], ignore_index=True, sort=False)
+    return combined
