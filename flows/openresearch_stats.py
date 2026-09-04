@@ -1,6 +1,7 @@
 from prefect import flow
 import os
 from tasks.event import create_stats_openresearch_events
+from tasks.eventSeries import create_stats_openresearch_eventSeries
 
 #PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "DEBUG")
 PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "INFO")  # Set default logging level to ERROR if not specified
@@ -17,6 +18,7 @@ def openresearch_stats(api_url: str,
     
     
     # collecting statistics of open research event pages in a dataframe
+    """
     create_stats_openresearch_events(api_url,
                                       username,
                                       password,
@@ -24,6 +26,15 @@ def openresearch_stats(api_url: str,
                                       template_name,
                                       llm_api_key=llm_api_key,
                                       dry_run=dry_run)
+    """
+    # collecting statistics of open research event series pages in a dataframe
+    create_stats_openresearch_eventSeries(api_url,
+                                          username,
+                                          password,
+                                          core_all_details_path,
+                                          template_name="Event series",
+                                          llm_api_key=llm_api_key,
+                                          dry_run=dry_run)
     return True
 
 if __name__ == "__main__":

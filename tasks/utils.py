@@ -925,3 +925,21 @@ def append_event_template_to_df(template_text: str, df: pd.DataFrame) -> pd.Data
     new_df = pd.DataFrame(records)
     combined = pd.concat([df, new_df], ignore_index=True, sort=False)
     return combined
+
+def append_eventSeries_template_to_df(template_text: str, df: pd.DataFrame) -> pd.DataFrame:
+    _EVENT_SERIES_RE = re.compile(r'\{\{Event series\b(.*?)\}\}', re.DOTALL | re.IGNORECASE)
+    if template_text is None or template_text.strip() == "":
+        return df
+
+    records = []
+    for match in _EVENT_SERIES_RE.findall(template_text):
+        rec = _parse_event_block(match)
+        if rec:
+            records.append(rec)
+
+    if not records:
+        return df
+
+    new_df = pd.DataFrame(records)
+    combined = pd.concat([df, new_df], ignore_index=True, sort=False)
+    return combined
