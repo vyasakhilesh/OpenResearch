@@ -84,6 +84,30 @@ services:
       - ./logs:/app/logs
       - ./tests:/app/tests
 
+  streamlit:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.streamlit
+    volumes:
+      - ./app:/app            # mount your Streamlit app code
+    environment:
+      STREAMLIT_SERVER_HEADLESS: "true"
+      STREAMLIT_SERVER_ENABLECORS: "false"
+      STREAMLIT_SERVER_ADDRESS: "0.0.0.0"
+      STREAMLIT_SERVER_PORT: "8501"
+      # Example: if your Streamlit app needs to call Prefect API
+      PREFECT_API_URL: "http://prefect-server:4200/api"
+    ports:
+      - "8501:8501"
+    depends_on:
+      prefect-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8501/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
 volumes:
   postgres_data:
   redis_data:
