@@ -22,7 +22,7 @@ ICTEL 2017,"27th ICTEL  2017 : 27th International Conference on Teaching, Educat
 
 @st.cache_data
 def load_df(csv_text: str) -> pd.DataFrame:
-    df = pd.read_csv(StringIO(csv_text), index_col=0)
+    df = pd.read_csv(StringIO(csv_text), index_col=False)
     # Normalize column names
     df.columns = [c.strip() for c in df.columns]
     # Parse date columns if present
@@ -36,7 +36,7 @@ def load_df(csv_text: str) -> pd.DataFrame:
     return df
 
 def render_preview(data: pd.DataFrame):
-    st.header("Data Preview")
+    st.header("Event Data Preview")
     st.dataframe(data.head(10))
     col = st.selectbox("X axis", options=data.columns, index=0, key="preview_x_axis")
     fig = px.histogram(data, x=col)

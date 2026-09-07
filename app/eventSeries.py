@@ -22,7 +22,7 @@ AAA-IDEA,International Workshop on Advanced Architectures and Algorithms for Int
 
 @st.cache_data
 def load_df(csv_text: str) -> pd.DataFrame:
-    df = pd.read_csv(StringIO(csv_text), index_col=0)
+    df = pd.read_csv(StringIO(csv_text), index_col=False)
     df.columns = [column.strip() for column in df.columns]
     # Given columns must be first in order and then rest columns can follow
     first_place_columns = ["Acronym", "Title", "Field", "DblpSeries", "Has CORE Rank", "Has CORE2026 Rank", 
@@ -43,7 +43,7 @@ def to_csv_bytes(data: pd.DataFrame) -> bytes:
 
 
 def render_preview(data: pd.DataFrame):
-	st.header("Event Series Preview")
+	st.header("Event Series Data Preview")
 	st.dataframe(data.head(10))
 
 	if data.empty or len(data.columns) == 0:
