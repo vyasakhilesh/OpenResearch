@@ -20,7 +20,7 @@ def event_page():
         st.info("Using embedded sample CSV. Upload your CSV to analyze your own data.")
 
     df = event.load_df(raw)
-    page = st.sidebar.radio("Navigate", ["Preview", "Report", "Filters"], key="app_page")
+    page = st.sidebar.radio("Navigate", ["Preview", "Report", "Filters"], key="event_page")
     
     if page == "Preview":
         event.render_preview(df)
