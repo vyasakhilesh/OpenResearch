@@ -11,16 +11,17 @@ st.set_page_config(page_title="OpenResearch Explorer", layout="wide")
 def event_page():
     st.title("Event CSV Explorer")
     st.markdown("Upload a CSV or use the sample dataset to explore events, filters, and visualizations.")
-    page = st.sidebar.radio("Navigate", ["Preview", "Report", "Filters"], key="app_page")
-
+    
     uploaded_file = st.file_uploader("Upload CSV file", type=["csv"], key="event_upload")
     if uploaded_file is not None:
         raw = uploaded_file.getvalue().decode("utf-8")
     else:
-        raw = event.SAMPLE_CSV
+        raw = event.SAMPLE_EVENT_CSV
         st.info("Using embedded sample CSV. Upload your CSV to analyze your own data.")
 
     df = event.load_df(raw)
+    page = st.sidebar.radio("Navigate", ["Preview", "Report", "Filters"], key="app_page")
+    
     if page == "Preview":
         event.render_preview(df)
     elif page == "Report":
@@ -57,7 +58,7 @@ if __name__ == "__main__":
         ["Events", "Event Series"],
         key="dataset_page",
     )
-
+    
     if dataset == "Events":
         event_page()
     else:
