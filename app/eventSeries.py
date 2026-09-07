@@ -132,7 +132,8 @@ def render_filters(data: pd.DataFrame):
 	col1, col2, col3 = st.columns(3)
 	col1.metric("Total series", len(filtered))
 	col2.metric("Unique fields", filtered["Field"].nunique() if "Field" in filtered.columns else 0)
-	ranked = filtered["Has CORE Rank"].notna().sum() if "Has CORE Rank" in filtered.columns else 0
+	# consider all rank columns for counting ranked series
+	ranked = filtered[[col for col in filtered.columns if col.startswith("Has CORE")]].notna().any(axis=1).sum()
 	col3.metric("CORE ranked series", int(ranked))
 
 	st.subheader("Series by Field")
