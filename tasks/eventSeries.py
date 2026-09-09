@@ -1,3 +1,5 @@
+from ast import pattern
+import re
 from prefect import get_run_logger, task
 from tasks.mw_auth import login_and_get_csrf
 from tasks.mw_api import (
@@ -283,6 +285,10 @@ def fix_eventSeries_wikitext(api_url: str, page_titles: List[str], session, csrf
                 eventSeries_wikitext, changed, old_tpl = set_multiple_params_in_template(eventSeries_wikitext, {"Acronym": acronym}, "Event series", False)
                         
             eventSeries_wikitext = normalize_homepage(eventSeries_wikitext)
+            # fix twitter account
+            twitter_pattern = re.compile(r'(?im)^(\s*\|\s*)(?:has\s+twitter(?:\s+account)?|twitter\s+account)(\s*=)', re.MULTILINE)
+            # Replace the matched parameter name with the canonical form 'Has twitter account'
+            eventSeries_wikitext = twitter_pattern.sub(r'\1Has twitter account\2', eventSeries_wikitext)
             # replace "Twitter account" with "X account" string
             # eventSeries_wikitext = replace_twitter_with_x(eventSeries_wikitext)
             # summary

@@ -109,6 +109,10 @@ def fix_event_wikitext(api_url: str, page_titles: List[str], session, csrf_token
             event_wikitext = clean_accepted_short_papers(event_wikitext)
             event_wikitext = normalize_event_dates(event_wikitext)
             event_wikitext = normalize_homepage(event_wikitext)
+            # fix twitter account
+            twitter_pattern = re.compile(r'(?im)^(\s*\|\s*)(?:has\s+twitter(?:\s+account)?|twitter\s+account)(\s*=)', re.MULTILINE)
+            # Replace the matched parameter name with the canonical form 'Has twitter account'
+            event_wikitext = twitter_pattern.sub(r'\1Has twitter account\2', event_wikitext)
             # replace "Twitter account" with "X account" string
             # event_wikitext = replace_twitter_with_x(event_wikitext)
             # summary
