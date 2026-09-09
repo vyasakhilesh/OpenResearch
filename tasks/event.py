@@ -43,7 +43,8 @@ import os
 import pandas as pd
 import numpy as np
 import re
-
+from datetime import datetime
+ 
 PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "INFO")
 # PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "DEBUG")
 
@@ -278,13 +279,13 @@ def preprocessing_openresearch_events(
     # fix_event_ordinal(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
     
     # fix event wikitext
-    # fix_event_wikitext(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
+    fix_event_wikitext(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
         
     # fix event duplicates and clean template using LLM if needed
     # fix_event_duplicates(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
     
     # fix and merge event template
-    fix_merging_of_event_templates(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
+    # fix_merging_of_event_templates(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
     
     return True
 
@@ -324,6 +325,7 @@ def create_stats_openresearch_events(
     
     # save to csv
     stats_output_path = os.environ.get("STATS_OUTPUT_PATH", "stats_openresearch_events.csv")
-    df_stats_openresearch_events.to_csv(stats_output_path+"stats_openresearch_events.csv", index=False)
+    # add year_month_day as string also while saving the file
+    df_stats_openresearch_events.to_csv(stats_output_path+f"_stats_openresearch_events_{datetime.now().strftime('%Y-%m-%d')}.csv", index=False)
     
     return True

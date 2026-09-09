@@ -21,6 +21,7 @@ import os
 import pandas as pd
 import numpy as np
 from typing import List, Dict, Optional
+from datetime import datetime
 
 # PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "DEBUG")
 PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "INFO")  # Set default logging level to ERROR if not specified
@@ -371,6 +372,5 @@ def create_stats_openresearch_eventSeries(
     
     # save to csv
     stats_output_path = os.environ.get("STATS_OUTPUT_PATH", "stats_openresearch_eventSeries.csv")
-    df_stats_openresearch_eventSeries.to_csv(stats_output_path + "stats_openresearch_eventSeries.csv", index=False)
-    
+    df_stats_openresearch_eventSeries.to_csv(stats_output_path + f"stats_openresearch_eventSeries_{datetime.now().strftime('%Y-%m-%d')}.csv", index=False)
     return True
