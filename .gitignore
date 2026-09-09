@@ -7,6 +7,6 @@ test.ipynb
 export_env.sh
 invoices
 output.txt
-nohup*.out
+nohup*
 mediawiki
 data/stats/
