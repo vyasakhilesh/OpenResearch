@@ -42,7 +42,7 @@ EVENT_TEMPLATE_ORDER = [
     "End date",
     "Submission deadline",
     "Homepage",
-    "X account",
+    "Has twitter account",
     "Logo",
     "Event mode",
     "City",
@@ -89,7 +89,7 @@ EVENT_TEMPLATE_ORDER = [
 EVENT_SERIES_TEMPLATE_ORDER = [
     "Acronym",
     "Title",
-    "Has Twitter",
+    "Has twitter account",
     "Logo",
     "WikiDataId",
     "DblpSeries",
