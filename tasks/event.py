@@ -326,6 +326,6 @@ def create_stats_openresearch_events(
     # save to csv
     stats_output_path = os.environ.get("STATS_OUTPUT_PATH", "stats_openresearch_events.csv")
     # add year_month_day as string also while saving the file
-    df_stats_openresearch_events.to_csv(stats_output_path+f"_stats_openresearch_events_{datetime.now().strftime('%Y-%m-%d')}.csv", index=False)
+    df_stats_openresearch_events.to_csv(stats_output_path+f"stats_openresearch_events_{datetime.now().strftime('%Y-%m-%d')}.csv", index=False)
     
     return True
