@@ -114,6 +114,24 @@ EVENT_SERIES_TEMPLATE_ORDER = [
     "organizer"
 ]
 
+Event_KEYS_TO_TRANSFORM: List[str] = [
+    "Title",
+    "Type",
+    "Field",
+    "Has host organization",
+    "Has coordinator",
+    "Has general chair",
+    "Has program chair",
+    "Has workshop chair",
+    "Has OC member",
+    "Has tutorial chair",
+    "Has demo chair",
+    "Has PC member",
+    "Has Keynote speaker",
+    "City",
+    "State",
+    "Country"]
+
 
 
 def extract_numbers(text: str) -> List[Dict[str, Number]]:
@@ -943,3 +961,64 @@ def append_eventSeries_template_to_df(template_text: str, df: pd.DataFrame) -> p
     new_df = pd.DataFrame(records)
     combined = pd.concat([df, new_df], ignore_index=True, sort=False)
     return combined
+
+def is_transformable_value(value: str) -> bool:
+    DATE_RE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
+    NUMBER_RE = re.compile(r'^\d+$')
+    URL_RE = re.compile(r'^(https?://|www\.)', re.IGNORECASE)
+    EMAIL_RE = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+    v = value.strip()
+    if not v:
+        return False
+    if DATE_RE.match(v):
+        return False
+    if NUMBER_RE.match(v):
+        return False
+    if URL_RE.match(v):
+        return False
+    if EMAIL_RE.match(v):
+        return False
+    if '/' in v or '|' in v:
+        return False
+    return True
+
+def title_case_preserve_acronyms(value: str) -> str:
+    # Split on spaces and title-case each token while preserving all-uppercase acronyms
+    tokens = value.split()
+    out = []
+    for t in tokens:
+        if t.isupper() and len(t) > 1:
+            out.append(t)
+        else:
+            out.append(t.title())
+    return ' '.join(out)
+
+def transform_event_values(text: str) -> str:
+    keys_norm = {k.strip().lower() for k in Event_KEYS_TO_TRANSFORM}
+
+    # Regex to find the Event block
+    block_re = re.compile(r'(\{\{Event\b)(.*?)(\}\})', re.DOTALL | re.IGNORECASE)
+
+    def repl(match):
+        header, body, footer = match.group(1), match.group(2), match.group(3)
+        lines = body.splitlines()
+        out_lines = []
+        for line in lines:
+            # Match lines like "|Key=Value" with optional leading whitespace
+            m = re.match(r'(\s*\|\s*([^=]+?)\s*=\s*)(.*)', line, re.IGNORECASE)
+            if not m:
+                out_lines.append(line)
+                continue
+            prefix, key, val = m.group(1), m.group(2), m.group(3)
+            key_norm = key.strip().lower()
+            val_stripped = val.rstrip()
+            if key_norm in keys_norm and is_transformable_value(val_stripped):
+                new_val = title_case_preserve_acronyms(val_stripped)
+            else:
+                new_val = val_stripped
+            out_lines.append(f"{prefix}{new_val}")
+        new_body = "\n".join(out_lines)
+        return header + new_body + footer
+
+    # Replace only the first EventTest block found
+    return block_re.sub(repl, text, count=1)

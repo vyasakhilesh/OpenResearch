@@ -36,6 +36,7 @@ from tasks.utils import (
     find_event_mode,
     destination_join_templates_case_insensitive,
     append_event_template_to_df,
+    transform_event_values,
     replace_twitter_with_x
 )
 from typing import List, Dict, Optional
@@ -97,7 +98,9 @@ def fix_event_wikitext(api_url: str, page_titles: List[str], session, csrf_token
                 if acronym != extract_acronym:
                     acronym = extract_acronym
                     event_wikitext, changed, old_tpl = set_multiple_params_in_template(event_wikitext, {"Acronym": acronym}, "Event", False)
-                        
+            
+            # reorder event template keys and clean wikitext
+            event_wikitext = reorder_event_template(event_wikitext)            
             pre_src_pattern = r"=== Sources ===\s*\}}\s*"
             src_pattern = r"=== Sources ===\s*\}\s*"
             ordinal_re = re.compile(r'\|\s*ordinal\s*=\s*["\']?\s*\d{4}\s*["\']?', re.IGNORECASE)
@@ -119,7 +122,9 @@ def fix_event_wikitext(api_url: str, page_titles: List[str], session, csrf_token
             # summary
             # fix event mode
             event_wikitext = find_event_mode(event_wikitext)
-            # fix event_wikitext template order
+            # transform event values to title case for specific keys
+            event_wikitext = transform_event_values(event_wikitext)
+            # reorder event template keys
             event_wikitext = reorder_event_template(event_wikitext)
             summary = f"Cleaned {page_title} with new text {event_wikitext}"
             if event_wikitext != event_wikitext_org:
