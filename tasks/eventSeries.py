@@ -16,7 +16,10 @@ from tasks.utils import (extract_eventSeries_from_wikitext,
                          string_similarity_rapidfuzz,
                          reorder_event_template,
                          normalize_homepage,
-                         append_eventSeries_template_to_df)
+                         append_eventSeries_template_to_df,
+                         transform_eventSeries_values,
+                         transform_core_values
+                         )
 import os
 import pandas as pd
 import numpy as np
@@ -290,9 +293,10 @@ def fix_eventSeries_wikitext(api_url: str, page_titles: List[str], session, csrf
             twitter_pattern = re.compile(r'(?im)^(\s*\|\s*)(?:has\s+twitter(?:\s+account)?|twitter\s+account)(\s*=)', re.MULTILINE)
             # Replace the matched parameter name with the canonical form 'Has twitter account'
             eventSeries_wikitext = twitter_pattern.sub(r'\1Has twitter account\2', eventSeries_wikitext)
-            # replace "Twitter account" with "X account" string
-            # eventSeries_wikitext = replace_twitter_with_x(eventSeries_wikitext)
-            # summary
+            # transform values for keys that start with 'Has CORE' if the value matches any canonical CORE rank after normalization
+            eventSeries_wikitext = transform_core_values(eventSeries_wikitext)
+            # transfrom values for keys
+            eventSeries_wikitext = transform_eventSeries_values(eventSeries_wikitext)
             # fix eventSeries_wikitext template order
             eventSeries_wikitext = reorder_event_template(eventSeries_wikitext, "Event series")
             summary = f"Cleaned {page_title} with new text {eventSeries_wikitext}"

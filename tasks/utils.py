@@ -86,6 +86,25 @@ EVENT_TEMPLATE_ORDER = [
     "Tracks",
 ]
 
+Event_KEYS_TO_TRANSFORM: List[str] = [
+    "Title",
+    "Type",
+    "Field",
+    "Has host organization",
+    "Has coordinator",
+    "Has general chair",
+    "Has program chair",
+    "Has workshop chair",
+    "Has OC member",
+    "Has tutorial chair",
+    "Has demo chair",
+    "Has PC member",
+    "Has Keynote speaker",
+    "City",
+    "State",
+    "Country"
+]
+
 EVENT_SERIES_TEMPLATE_ORDER = [
     "Acronym",
     "Title",
@@ -114,25 +133,33 @@ EVENT_SERIES_TEMPLATE_ORDER = [
     "organizer"
 ]
 
-Event_KEYS_TO_TRANSFORM: List[str] = [
+EventSeries_KEYS_TO_TRANSFORM: List[str] = [
     "Title",
-    "Type",
+    "Has CORE Rank",
+    "Has CORE2026 Rank",
+    "Has CORE2023 Rank",
+    "Has CORE2021 Rank",
+    "Has CORE2020 Rank",
+    "Has CORE2018 Rank",
+    "Has CORE2017 Rank",
+    "Has CORE2014 Rank",
+    "Has CORE2013 Rank",
+    "Has CORE2010 Rank",
+    "Has CORE2008 Rank",
+    "Has SC member",
     "Field",
-    "Has host organization",
-    "Has coordinator",
-    "Has general chair",
-    "Has program chair",
-    "Has workshop chair",
-    "Has OC member",
-    "Has tutorial chair",
-    "Has demo chair",
-    "Has PC member",
-    "Has Keynote speaker",
-    "City",
-    "State",
-    "Country"]
+    "organizer"
+]
 
-
+CORE_RANKS_LIST=['A*', 'A', 'B', 'C', 'Unranked', 'TBR', 'Journal Published', 'Multiconference', 
+                 'National', 'National: Bulgaria', 'National: China', 'National: Croatia', 'National: Czech', 
+                 'National: Czecholslovakia', 'National: France', 'National: Germany', 'National: India', 'National: Iran', 
+                 'National: Italy', 'National: Japan', 'National: Korea', 'National: Malaysia', 'National: Pakistan', 
+                 'National: Poland', 'National: Portugal', 'National: Romania', 'National: Russia', 'National: S. Korea', 
+                 'National: Spain', 'National: Slovakia', 'National: Tunisia', 'National: UK', 'National: USA', 'National: Ukraine', 
+                 'National: Vietnam', 'National: Israel', 'National: Morocco', 'National: Ireland', 'National: Serbia', 
+                 'National/Regional', 'Regional', 'Regional - Baltic', 'Regional: Austria, Germany, Netherlands', 
+                 'Regional: Scandinavia', 'Australasian B', 'Australasian C', 'NA']
 
 def extract_numbers(text: str) -> List[Dict[str, Number]]:
     """
@@ -1022,3 +1049,67 @@ def transform_event_values(text: str) -> str:
 
     # Replace only the first EventTest block found
     return block_re.sub(repl, text, count=1)
+
+def transform_eventSeries_values(text: str) -> str:
+    keys_norm = {k.strip().lower() for k in EventSeries_KEYS_TO_TRANSFORM}
+
+    # Regex to find the Event block
+    block_re = re.compile(r'(\{\{Event series\b)(.*?)(\}\})', re.DOTALL | re.IGNORECASE)
+
+    def repl(match):
+        header, body, footer = match.group(1), match.group(2), match.group(3)
+        lines = body.splitlines()
+        out_lines = []
+        for line in lines:
+            # Match lines like "|Key=Value" with optional leading whitespace
+            m = re.match(r'(\s*\|\s*([^=]+?)\s*=\s*)(.*)', line, re.IGNORECASE)
+            if not m:
+                out_lines.append(line)
+                continue
+            prefix, key, val = m.group(1), m.group(2), m.group(3)
+            key_norm = key.strip().lower()
+            val_stripped = val.rstrip()
+            if key_norm in keys_norm and is_transformable_value(val_stripped):
+                new_val = title_case_preserve_acronyms(val_stripped)
+            else:
+                new_val = val_stripped
+            out_lines.append(f"{prefix}{new_val}")
+        new_body = "\n".join(out_lines)
+        return header + new_body + footer
+
+    # Replace only the first Event series block found
+    return block_re.sub(repl, text, count=1)
+
+def build_normalized_corerank_map(core_list: List[str]) -> Dict[str, str]:
+    m = {}
+    for v in core_list:
+        norm = re.sub(r'\s+', '', v.lower())
+        m[norm] = v
+    return m
+
+def normalize_corerank_value_for_match(value: str) -> str:
+    v = value.strip()
+    if (v.startswith('"') and v.endswith('"')) or (v.startswith("'") and v.endswith("'")):
+        v = v[1:-1].strip()
+    v = re.sub(r'^\[\[|\]\]$', '', v)
+    return re.sub(r'\s+', '', v.lower())
+
+def transform_core_values(text: str, core_list: List[str]=CORE_RANKS_LIST) -> str:
+    norm_map = build_normalized_corerank_map(core_list)
+    pattern = re.compile(r'(^\s*\|\s*(Has\s+CORE[^\=]*?)\s*=\s*)(.*)$', re.IGNORECASE | re.MULTILINE)
+
+    def repl(m: re.Match) -> str:
+        prefix = m.group(1)      
+        key = m.group(2)         
+        raw_val = m.group(3)
+        val = raw_val.rstrip()
+        val_norm = normalize_corerank_value_for_match(val)
+        if val_norm in norm_map:
+            new_val = norm_map[val_norm]
+            return f"{prefix}{new_val}"
+        # no match -> return original line unchanged
+        return m.group(0)
+
+    return pattern.sub(repl, text)
+
+
