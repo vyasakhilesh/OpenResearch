@@ -1005,13 +1005,12 @@ def is_transformable_value(value: str) -> bool:
         return False
     if EMAIL_RE.match(v):
         return False
-    if '/' in v or '|' in v:
-        return False
     return True
 
 def title_case_preserve_acronyms(value: str) -> str:
     # Split on spaces and title-case each token while preserving all-uppercase acronyms
     tokens = value.split()
+    # print(f"Transforming value: {value} -> tokens: {tokens}")
     out = []
     for t in tokens:
         if t.isupper() and len(t) > 1:
