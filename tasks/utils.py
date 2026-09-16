@@ -1,4 +1,4 @@
-from typing import Dict, Optional, List, Any, Tuple
+from typing import Dict, Optional, List, Any, Tuple, set
 from prefect import task
 import re
 from datetime import datetime, timezone
@@ -160,6 +160,12 @@ CORE_RANKS_LIST=['A*', 'A', 'B', 'C', 'Unranked', 'TBR', 'Journal Published', 'M
                  'National: Vietnam', 'National: Israel', 'National: Morocco', 'National: Ireland', 'National: Serbia', 
                  'National/Regional', 'Regional', 'Regional - Baltic', 'Regional: Austria, Germany, Netherlands', 
                  'Regional: Scandinavia', 'Australasian B', 'Australasian C', 'NA']
+
+DEFAULT_STOPWORDS: Set[str] = {
+    "a", "an", "the", "and", "or", "but", "for", "nor", "on", "at", "to",
+    "from", "by", "of", "in", "with", "as", "is", "if", "than", "so", 'are',
+    'that', 'this', 'those', 'these', 'it', 'its', 'be', 'was', 'were'
+}
 
 def extract_numbers(text: str) -> List[Dict[str, Number]]:
     """
@@ -432,11 +438,7 @@ def normalize_string(s: Optional[str]) -> Optional[str]:
     # remove punctuation
     s = re.sub(r'[^\w\s]', '', s)
     # remove stop words
-    stop_words = set([
-        "the", "and", "of", "in", "on", "for", "with", "to", "a", "an",
-        "at", "by", "from", "is", "are", "as", "that", "this", "these",
-        "those", "it", "its", "be", "was", "were"
-    ])
+    stop_words = DEFAULT_STOPWORDS
     tokens = s.split()
     tokens = [t for t in tokens if t not in stop_words]
     s = ' '.join(tokens)
@@ -1007,17 +1009,33 @@ def is_transformable_value(value: str) -> bool:
         return False
     return True
 
-def title_case_preserve_acronyms(value: str) -> str:
-    # Split on spaces and title-case each token while preserving all-uppercase acronyms
+
+def title_case_preserve_acronyms(
+    value: str,
+    stopwords: Optional[Iterable[str]] = None
+) -> str:
+    if not value:
+        return ""
+
+    stopwords_set: Set[str] = set(stopwords) if stopwords is not None else DEFAULT_STOPWORDS
+
+    def transform_subtoken(sub: str, is_first: bool) -> str:
+        if sub.isupper() and len(sub) > 1:
+            return sub
+        if sub.lower() in stopwords_set and not is_first:
+            return sub.lower()
+        return sub[:1].upper() + sub[1:].lower() if sub else sub
+
+    def transform_token(token: str, is_first: bool) -> str:
+        if "-" in token:
+            parts = token.split("-")
+            return "-".join(transform_subtoken(p, is_first and i == 0) for i, p in enumerate(parts))
+        return transform_subtoken(token, is_first)
+
     tokens = value.split()
-    # print(f"Transforming value: {value} -> tokens: {tokens}")
-    out = []
-    for t in tokens:
-        if t.isupper() and len(t) > 1:
-            out.append(t)
-        else:
-            out.append(t.title())
-    return ' '.join(out)
+    transformed = [transform_token(tok, i == 0) for i, tok in enumerate(tokens)]
+    return " ".join(transformed)
+
 
 def transform_event_values(text: str) -> str:
     keys_norm = {k.strip().lower() for k in Event_KEYS_TO_TRANSFORM}
