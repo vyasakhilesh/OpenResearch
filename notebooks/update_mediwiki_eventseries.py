@@ -38,7 +38,7 @@ def mw_login():
     r.raise_for_status()
     return r.json()["query"]["tokens"]["csrftoken"]
 
-def get_event_pages(title="Category:Stand-alone event"):
+def get_event_pages(title="Category:Event"):
     params = {"action":"query","list":"categorymembers","cmtitle":title, "cmlimit":"max","format":"json"}
     titles = []
     while True:

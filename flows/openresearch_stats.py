@@ -12,13 +12,12 @@ def openresearch_stats(api_url: str,
                             username: str,
                             password: str,
                             core_all_details_path: str,
-                            template_name: str = "Stand-alone event",
+                            template_name: str = "Event",
                             llm_api_key: str = None,
                             dry_run: bool = True):
     
     
     # collecting statistics of open research event pages in a dataframe
-    """
     create_stats_openresearch_events(api_url,
                                       username,
                                       password,
@@ -26,7 +25,6 @@ def openresearch_stats(api_url: str,
                                       template_name,
                                       llm_api_key=llm_api_key,
                                       dry_run=dry_run)
-    """
     # collecting statistics of open research event series pages in a dataframe
     create_stats_openresearch_eventSeries(api_url,
                                           username,
@@ -50,7 +48,7 @@ if __name__ == "__main__":
                         USER,
                         PASS,
                         core_all_details_path,
-                        template_name="Stand-alone event",
+                        template_name="Event",
                         llm_api_key='', #os.environ.get("OPENROUTER_API_KEY"),
                         dry_run=False,
                         )

@@ -8,7 +8,7 @@ from typing import List, Tuple, Optional, Dict
 DEFAULT_USER_AGENT = "openresearch-core-ranker/1.0 (contact: you@example.org)"
 
 @task
-def get_event_pages(api_url: str, session, category_title: str = "Category:Stand-alone event") -> List[str]:
+def get_event_pages(api_url: str, session, category_title: str = "Category:Event") -> List[str]:
     params = {"action":"query","list":"categorymembers","cmtitle":category_title, "cmlimit":"max","format":"json"}
     titles: List[str] = []
     while True:

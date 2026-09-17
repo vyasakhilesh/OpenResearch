@@ -317,7 +317,7 @@ def preprocessing_openresearch_eventSeries(
     username: str,
     password: str,
     core_all_details_path: str,
-    template_name: str = "Stand-alone event",
+    template_name: str = "Event",
     llm_api_key: Optional[str] = None,
     dry_run: bool = True,
 ):
@@ -346,7 +346,7 @@ def create_stats_openresearch_eventSeries(
     username: str,
     password: str,
     core_all_details_path: str,
-    template_name: str = "Stand-alone event",
+    template_name: str = "Event",
     llm_api_key: Optional[str] = None,
     dry_run: bool = True,
 ):

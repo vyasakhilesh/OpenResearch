@@ -1,4 +1,4 @@
-from typing import Dict, Optional, List, Any, Tuple, set
+from typing import Iterable, Dict, Optional, List, Any, Tuple, Set
 from prefect import task
 import re
 from datetime import datetime, timezone
@@ -151,7 +151,7 @@ EventSeries_KEYS_TO_TRANSFORM: List[str] = [
     "organizer"
 ]
 
-CORE_RANKS_LIST=['A*', 'A', 'B', 'C', 'Unranked', 'TBR', 'Journal Published', 'Multiconference', 
+CORE_RANKS_LIST=['A*', 'A', 'B', 'C', 'Unranked', 'Unranked: Merged', 'Unranked: Not Primarily CS', 'NA', 'TBR', 'Journal Published', 'Multiconference', 
                  'National', 'National: Bulgaria', 'National: China', 'National: Croatia', 'National: Czech', 
                  'National: Czecholslovakia', 'National: France', 'National: Germany', 'National: India', 'National: Iran', 
                  'National: Italy', 'National: Japan', 'National: Korea', 'National: Malaysia', 'National: Pakistan', 
@@ -159,7 +159,7 @@ CORE_RANKS_LIST=['A*', 'A', 'B', 'C', 'Unranked', 'TBR', 'Journal Published', 'M
                  'National: Spain', 'National: Slovakia', 'National: Tunisia', 'National: UK', 'National: USA', 'National: Ukraine', 
                  'National: Vietnam', 'National: Israel', 'National: Morocco', 'National: Ireland', 'National: Serbia', 
                  'National/Regional', 'Regional', 'Regional - Baltic', 'Regional: Austria, Germany, Netherlands', 
-                 'Regional: Scandinavia', 'Australasian B', 'Australasian C', 'NA']
+                 'Regional: Scandinavia', 'Australasian B', 'Australasian C']
 
 DEFAULT_STOPWORDS: Set[str] = {
     "a", "an", "the", "and", "or", "but", "for", "nor", "on", "at", "to",
@@ -1014,27 +1014,50 @@ def title_case_preserve_acronyms(
     value: str,
     stopwords: Optional[Iterable[str]] = None
 ) -> str:
+
+    _SEP_RE = re.compile(r'([/_-])')  # capture separators so they are preserved
+
     if not value:
         return ""
 
     stopwords_set: Set[str] = set(stopwords) if stopwords is not None else DEFAULT_STOPWORDS
 
-    def transform_subtoken(sub: str, is_first: bool) -> str:
+    def transform_subtoken(sub: str, is_first_overall: bool) -> str:
+        if not sub:
+            return sub
+        # Preserve acronyms (all uppercase and length > 1)
         if sub.isupper() and len(sub) > 1:
             return sub
-        if sub.lower() in stopwords_set and not is_first:
+        # Lowercase stopwords unless it's the very first token of the whole string
+        if sub.lower() in stopwords_set and not is_first_overall:
             return sub.lower()
-        return sub[:1].upper() + sub[1:].lower() if sub else sub
-
-    def transform_token(token: str, is_first: bool) -> str:
-        if "-" in token:
-            parts = token.split("-")
-            return "-".join(transform_subtoken(p, is_first and i == 0) for i, p in enumerate(parts))
-        return transform_subtoken(token, is_first)
+        # Title-case the subtoken (safe capitalization)
+        return sub[:1].upper() + sub[1:].lower() if len(sub) > 1 else sub.upper()
 
     tokens = value.split()
-    transformed = [transform_token(tok, i == 0) for i, tok in enumerate(tokens)]
-    return " ".join(transformed)
+    out_tokens = []
+
+    for token_index, token in enumerate(tokens):
+        is_first_overall = token_index == 0
+        # Split token into parts while keeping separators
+        parts = _SEP_RE.split(token)
+        transformed_parts = []
+        # Track whether this part is the first alphanumeric subtoken of the overall string
+        first_alnum_seen = False
+        for part_index, part in enumerate(parts):
+            # separators match the regex group (single char '/', '_' or '-')
+            if _SEP_RE.fullmatch(part):
+                transformed_parts.append(part)
+                continue
+            # Determine if this alphanumeric part should be treated as the "first" for stopword rules
+            is_first_for_stopword = is_first_overall and not first_alnum_seen
+            transformed = transform_subtoken(part, is_first_for_stopword)
+            transformed_parts.append(transformed)
+            if part.strip():
+                first_alnum_seen = True
+        out_tokens.append(''.join(transformed_parts))
+
+    return ' '.join(out_tokens)
 
 
 def transform_event_values(text: str) -> str:

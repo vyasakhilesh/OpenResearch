@@ -11,7 +11,7 @@ def openresearch_event(api_url: str,
                             username: str,
                             password: str,
                             core_all_details_path: str,
-                            template_name: str = "Stand-alone event",
+                            template_name: str = "Event",
                             llm_api_key: str = None,
                             dry_run: bool = True):
     
@@ -61,7 +61,7 @@ if __name__ == "__main__":
                         USER,
                         PASS,
                         core_all_details_path,
-                        template_name="Stand-alone event",
+                        template_name="Event",
                         llm_api_key='', #os.environ.get("OPENROUTER_API_KEY"),
                         dry_run=False,
                         )
