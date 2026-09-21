@@ -71,10 +71,11 @@ def create_core_data(years: list = ["2026"]):
     # Clean field string
     def strip_trailing_marker(value):
         text = str(value).strip()
-        text = re.sub(r"[†‡]\s*(?:,\s*)*$", "", text)
+        text = re.sub(r"[†‡]", "", text)
+        text = re.sub(r"\s*,\s*", ", ", text)
+        text = re.sub(r"\s+", " ", text)
         text = re.sub(r"(?:,\s*)+$", "", text)
-        text = text.strip()
-        return text
+        return text.strip()
     
     merged["Field"] = merged["Field"].apply(strip_trailing_marker)
     merged.to_csv("./data/coreranking/CORE_all_details.csv", index=False)
