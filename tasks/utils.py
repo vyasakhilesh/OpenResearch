@@ -1029,7 +1029,8 @@ def title_case_preserve_acronyms(
 
     stopwords_set: Set[str] = set(stopwords) if stopwords is not None else DEFAULT_STOPWORDS
     value = value.strip().strip('"').strip("'").strip()
-    value = re.sub(r'["\']', '', value)
+    # only remove quotes, not apostrophes
+    value = re.sub(r'^[\'"]+|[\'"]+$', '', value)
     value = re.sub(r'\s*,\s*', ', ', value)
         
     def transform_subtoken(sub: str, is_first_overall: bool) -> str:
