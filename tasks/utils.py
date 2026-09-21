@@ -333,6 +333,14 @@ def _normalize_key(k: str) -> str:
 def _strip_quotes_and_ws(s: str) -> str:
     return s.strip().strip('"').strip("'").strip()
 
+def _strip_trailing_marker(value):
+    text = str(value).strip()
+    text = re.sub(r"[†‡]", "", text)
+    text = re.sub(r"\s*,\s*", ", ", text)
+    text = re.sub(r"\s+", " ", text)
+    text = re.sub(r"(?:,\s*)+$", "", text)
+    return text.strip()
+
 def _infer_series_from_acronym(acronym: str) -> Optional[str]:
     if not acronym:
         return None
@@ -1015,23 +1023,22 @@ def title_case_preserve_acronyms(
     stopwords: Optional[Iterable[str]] = None
 ) -> str:
 
-    _SEP_RE = re.compile(r'([/_-])')  # capture separators so they are preserved
-
+    _SEP_RE = re.compile(r'([/,_-])')  # capture separators so they are preserved
     if not value:
         return ""
 
     stopwords_set: Set[str] = set(stopwords) if stopwords is not None else DEFAULT_STOPWORDS
-
+    value = value.strip().strip('"').strip("'").strip()
+    value = re.sub(r'["\']', '', value)
+    value = re.sub(r'\s*,\s*', ', ', value)
+        
     def transform_subtoken(sub: str, is_first_overall: bool) -> str:
         if not sub:
             return sub
-        # Preserve acronyms (all uppercase and length > 1)
         if sub.isupper() and len(sub) > 1:
             return sub
-        # Lowercase stopwords unless it's the very first token of the whole string
         if sub.lower() in stopwords_set and not is_first_overall:
             return sub.lower()
-        # Title-case the subtoken (safe capitalization)
         return sub[:1].upper() + sub[1:].lower() if len(sub) > 1 else sub.upper()
 
     tokens = value.split()
@@ -1039,17 +1046,13 @@ def title_case_preserve_acronyms(
 
     for token_index, token in enumerate(tokens):
         is_first_overall = token_index == 0
-        # Split token into parts while keeping separators
         parts = _SEP_RE.split(token)
         transformed_parts = []
-        # Track whether this part is the first alphanumeric subtoken of the overall string
         first_alnum_seen = False
         for part_index, part in enumerate(parts):
-            # separators match the regex group (single char '/', '_' or '-')
             if _SEP_RE.fullmatch(part):
                 transformed_parts.append(part)
                 continue
-            # Determine if this alphanumeric part should be treated as the "first" for stopword rules
             is_first_for_stopword = is_first_overall and not first_alnum_seen
             transformed = transform_subtoken(part, is_first_for_stopword)
             transformed_parts.append(transformed)
@@ -1083,6 +1086,7 @@ def transform_event_values(text: str) -> str:
                 new_val = title_case_preserve_acronyms(val_stripped)
             else:
                 new_val = val_stripped
+            new_val = _strip_trailing_marker(new_val)
             out_lines.append(f"{prefix}{new_val}")
         new_body = "\n".join(out_lines)
         return header + new_body + footer
@@ -1113,12 +1117,34 @@ def transform_eventSeries_values(text: str) -> str:
                 new_val = title_case_preserve_acronyms(val_stripped)
             else:
                 new_val = val_stripped
+            new_val = _strip_trailing_marker(new_val)
             out_lines.append(f"{prefix}{new_val}")
         new_body = "\n".join(out_lines)
         return header + new_body + footer
 
     # Replace only the first Event series block found
     return block_re.sub(repl, text, count=1)
+
+def convert_wiki_categories(text: str, stopwords: Optional[Iterable[str]] = None) -> str:
+    """
+    Convert occurrences of [[category: ...]] (case-insensitive) to
+    [[Category:Title Cased ...]] using title_case_preserve_acronyms and ignoring stopwords.
+    """
+    stopwords_set = set(stopwords) if stopwords is not None else DEFAULT_STOPWORDS
+
+    # Matches [[category: ...]] capturing the inner text lazily
+    pattern = re.compile(r'\[\[\s*category\s*:\s*([^\]]+?)\s*\]\]', re.IGNORECASE)
+
+    def repl(m: re.Match) -> str:
+        inner = m.group(1).strip()
+        # collapse multiple whitespace into single spaces
+        inner = re.sub(r'\s+', ' ', inner)
+        # apply title-casing while preserving acronyms and stopword rules
+        title = title_case_preserve_acronyms(inner, stopwords_set)
+        return f'[[Category:{title}]]'
+
+    return pattern.sub(repl, text)
+
 
 def build_normalized_corerank_map(core_list: List[str]) -> Dict[str, str]:
     m = {}
@@ -1151,5 +1177,4 @@ def transform_core_values(text: str, core_list: List[str]=CORE_RANKS_LIST) -> st
         return m.group(0)
 
     return pattern.sub(repl, text)
-
 

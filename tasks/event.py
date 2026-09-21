@@ -37,6 +37,7 @@ from tasks.utils import (
     destination_join_templates_case_insensitive,
     append_event_template_to_df,
     transform_event_values,
+    convert_wiki_categories,
     replace_twitter_with_x
 )
 from typing import List, Dict, Optional
@@ -124,6 +125,8 @@ def fix_event_wikitext(api_url: str, page_titles: List[str], session, csrf_token
             event_wikitext = find_event_mode(event_wikitext)
             # transform event values to title case for specific keys
             event_wikitext = transform_event_values(event_wikitext)
+            # transform wiki categories to title case and remove quotes from category names
+            event_wikitext = convert_wiki_categories(event_wikitext)
             # reorder event template keys
             event_wikitext = reorder_event_template(event_wikitext)
             summary = f"Cleaned {page_title} with new text {event_wikitext}"
@@ -277,7 +280,11 @@ def preprocessing_openresearch_events(
     csrf_token, session = login_and_get_csrf(api_url, username, password)
         
     # 1. collect pages
-    page_titles = get_event_pages(api_url, session, f"Category:{template_name}")
+    page_titles = []
+    for members in get_event_pages(api_url, session, f"Category:{template_name}"):
+        event_list = get_event_pages(api_url, session, members)
+        page_titles.extend(event_list)
+    
     logger.info(f"Found {len(page_titles)} pages, e.g., {page_titles[0:50]}")
     
     # fix event ordinal
@@ -314,7 +321,10 @@ def create_stats_openresearch_events(
     csrf_token, session = login_and_get_csrf(api_url, username, password)
         
     # 1. collect pages
-    page_titles = get_event_pages(api_url, session, f"Category:{template_name}")
+    page_titles = []
+    for members in get_event_pages(api_url, session, f"Category:{template_name}"):
+        event_list = get_event_pages(api_url, session, members)
+        page_titles.extend(event_list)    
     logger.info(f"Found {len(page_titles)} pages, e.g., {page_titles[0:50]}")
     
     # 2. collect statistics of open research event pages in a dataframe

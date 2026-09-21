@@ -18,7 +18,8 @@ from tasks.utils import (extract_eventSeries_from_wikitext,
                          normalize_homepage,
                          append_eventSeries_template_to_df,
                          transform_eventSeries_values,
-                         transform_core_values
+                         transform_core_values,
+                         convert_wiki_categories
                          )
 import os
 import pandas as pd
@@ -297,6 +298,8 @@ def fix_eventSeries_wikitext(api_url: str, page_titles: List[str], session, csrf
             eventSeries_wikitext = transform_core_values(eventSeries_wikitext)
             # transfrom values for keys
             eventSeries_wikitext = transform_eventSeries_values(eventSeries_wikitext)
+            # transform wiki categories to title case and remove quotes from category names
+            eventSeries_wikitext = convert_wiki_categories(eventSeries_wikitext)
             # fix eventSeries_wikitext template order
             eventSeries_wikitext = reorder_event_template(eventSeries_wikitext, "Event series")
             summary = f"Cleaned {page_title} with new text {eventSeries_wikitext}"
