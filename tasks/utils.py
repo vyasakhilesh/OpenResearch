@@ -1051,6 +1051,7 @@ def title_case_preserve_acronyms(
         transformed_parts = []
         first_alnum_seen = False
         for part_index, part in enumerate(parts):
+            part = re.sub(r'^[\'"]+|[\'"]+$', '', part)
             if _SEP_RE.fullmatch(part):
                 transformed_parts.append(part)
                 continue
