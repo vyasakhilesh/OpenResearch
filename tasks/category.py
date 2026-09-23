@@ -16,7 +16,10 @@ from tasks.mw_api import (
     delete_page,
     page_exists,
 )
-
+from tasks.utils import (
+    title_case_preserve_acronyms,
+    convert_wiki_categories
+)
  
 PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "INFO")
 # PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "DEBUG")
@@ -29,15 +32,30 @@ def fix_category_wikitext(api_url: str, page_titles: List[str], session, csrf_to
         try:
             category_wikitext = get_page_wikitext(api_url, page_title, session)
             category_wikitext_org = category_wikitext
-            summary = f"Cleaned {page_title} with new text {category_wikitext}"
-            if category_wikitext != category_wikitext_org:
+            page_title_org = page_title
+            page_title = 'Category:' + title_case_preserve_acronyms(page_title.replace('Category:', 'category:').split('category:', 1)[1])
+            category_wikitext = convert_wiki_categories(category_wikitext)
+            logger.debug(f"""\nOld page title: {page_title_org}, new page title: {page_title} """)
+            logger.debug(f"""\nOld category_wikitext:\n {category_wikitext_org} \n new category_wikitext:\n {category_wikitext} """)
+
+            if (category_wikitext != category_wikitext_org) and (page_title == page_title_org):
+                summary = f"Edited {page_title} with new text {category_wikitext}"
                 res = edit_page(api_url, page_title, category_wikitext, csrf_token, session, summary, dry_run)
                 if res.get('error'):
                     logger.error("Edit result for page_title %s: result: %s", page_title, res['error']['code'])
                 else:
                     logger.info(f"successfully edit result for page_title: {page_title}")
+            elif  page_title != page_title_org:
+                  delete_page(api_url, page_title_org, csrf_token, session)
+                  logger.info("Deleted page %s for recreation with cleaned template", page_title_org)
+                  summary = f"Created {page_title} with new text {category_wikitext}"
+                  res = create_page(api_url, page_title, category_wikitext, csrf_token, session, summary, dry_run)
+                  if res.get('error'):
+                        logger.error("Create result for page_title %s: result: %s", page_title, res['error']['code'])
+                  else:
+                        logger.info(f"successfully create result for page_title: {page_title}")
         except Exception as e:
-            logger.error("Get category Wikitext Exception for %s: %s", page_title, e)
+            logger.error("Get category Wikitext Exception for %s: %s", page_title_org, e)
             continue
             
 def collect_all_categories_iterative(api_url, session, root_category, max_depth=None):
@@ -86,7 +104,7 @@ def preprocessing_openresearch_categories(
     csrf_token, session = login_and_get_csrf(api_url, username, password)
         
     # 1. collect pages
-    page_titles = collect_all_categories_iterative(api_url, session, "Category:Science")
+    page_titles = collect_all_categories_iterative(api_url, session, "Category:Content")
     logger.info(f"Found {len(page_titles)} pages, e.g., {page_titles[0:50]}")
     
     
