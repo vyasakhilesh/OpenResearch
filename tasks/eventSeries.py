@@ -3,7 +3,7 @@ import re
 from prefect import get_run_logger, task
 from tasks.mw_auth import login_and_get_csrf
 from tasks.mw_api import (
-    get_event_pages,
+    get_event_members,
     get_series_titles,
     get_page_wikitext,
     create_page,
@@ -334,7 +334,7 @@ def preprocessing_openresearch_eventSeries(
     csrf_token, session = login_and_get_csrf(api_url, username, password)
         
     # 1. collect pages
-    page_titles = get_event_pages(api_url, session, f"Category:{template_name}")
+    page_titles = get_event_members(api_url, session, f"Category:{template_name}")
     logger.info(f"Found {len(page_titles)} pages, e.g., {page_titles[0:60]}")
     
     
@@ -363,7 +363,7 @@ def create_stats_openresearch_eventSeries(
     csrf_token, session = login_and_get_csrf(api_url, username, password)
         
     # 1. collect pages
-    page_titles = get_event_pages(api_url, session, f"Category:{template_name}")
+    page_titles = get_event_members(api_url, session, f"Category:{template_name}")
     logger.info(f"Found {len(page_titles)} pages, e.g., {page_titles[0:50]}")
     
     # 2. collect statistics of open research event pages in a dataframe

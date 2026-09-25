@@ -11,7 +11,7 @@ from time import time
 from prefect import flow, get_run_logger
 from tasks.mw_auth import login_and_get_csrf
 from tasks.mw_api import (
-    get_event_pages,
+    get_event_members,
     get_page_wikitext,
     create_page,
     edit_page,
@@ -281,8 +281,8 @@ def preprocessing_openresearch_events(
         
     # 1. collect pages
     page_titles = []
-    for members in get_event_pages(api_url, session, f"Category:{template_name}"):
-        event_list = get_event_pages(api_url, session, members)
+    for members in get_event_members(api_url, session, f"Category:{template_name}"):
+        event_list = get_event_members(api_url, session, members)
         page_titles.extend(event_list)
     
     logger.info(f"Found {len(page_titles)} pages, e.g., {page_titles[0:50]}")
@@ -322,8 +322,8 @@ def create_stats_openresearch_events(
         
     # 1. collect pages
     page_titles = []
-    for members in get_event_pages(api_url, session, f"Category:{template_name}"):
-        event_list = get_event_pages(api_url, session, members)
+    for members in get_event_members(api_url, session, f"Category:{template_name}"):
+        event_list = get_event_members(api_url, session, members)
         page_titles.extend(event_list)    
     logger.info(f"Found {len(page_titles)} pages, e.g., {page_titles[0:50]}")
     

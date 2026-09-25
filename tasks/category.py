@@ -9,7 +9,7 @@ import numpy as np
 import re
 from datetime import datetime
 from tasks.mw_api import (
-    get_category_pages,
+    get_category_members,
     get_page_wikitext,
     create_page,
     edit_page,
@@ -75,7 +75,7 @@ def collect_all_categories_iterative(api_url, session, root_category, max_depth=
             continue
 
         try:
-            subcats = get_category_pages(api_url, session, category)
+            subcats = get_category_members(api_url, session, category)
         except Exception:
             # optionally log or handle transient errors; skip on failure
             subcats = []
@@ -104,7 +104,8 @@ def preprocessing_openresearch_categories(
     csrf_token, session = login_and_get_csrf(api_url, username, password)
         
     # 1. collect pages
-    page_titles = collect_all_categories_iterative(api_url, session, "Category:Content")
+    # page_titles = collect_all_categories_iterative(api_url, session, "Category:Content")
+    page_titles = collect_all_categories_iterative(api_url, session, "Category:")
     logger.info(f"Found {len(page_titles)} pages, e.g., {page_titles[0:50]}")
     
     

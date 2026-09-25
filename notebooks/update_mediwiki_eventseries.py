@@ -38,7 +38,7 @@ def mw_login():
     r.raise_for_status()
     return r.json()["query"]["tokens"]["csrftoken"]
 
-def get_event_pages(title="Category:Event"):
+def get_event_members(title="Category:Event"):
     params = {"action":"query","list":"categorymembers","cmtitle":title, "cmlimit":"max","format":"json"}
     titles = []
     while True:
@@ -202,7 +202,7 @@ def extract_series_strict_two_tokens(acronym: str) -> str:
     return None
 
 csrf_token = mw_login()
-titles = get_event_pages()
+titles = get_event_members()
 print(f"Found {len(titles)} series pages. e.g. {titles[0:20]}")
 
 for title in titles:

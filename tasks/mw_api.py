@@ -8,7 +8,7 @@ from typing import List, Tuple, Optional, Dict
 DEFAULT_USER_AGENT = "openresearch-core-ranker/1.0 (contact: you@example.org)"
 
 @task
-def get_event_pages(api_url: str, session, category_title: str = "Category:Event") -> List[str]:
+def get_event_members(api_url: str, session, category_title: str = "Category:Event") -> List[str]:
     params = {"action":"query","list":"categorymembers","cmtitle":category_title, "cmlimit":"max","format":"json"}
     titles: List[str] = []
     while True:
@@ -25,7 +25,7 @@ def get_event_pages(api_url: str, session, category_title: str = "Category:Event
     return titles
 
 @task
-def get_eventSeries_pages(api_url: str, session, category_title: str = "Category:Event series") -> List[str]:
+def get_eventSeries_members(api_url: str, session, category_title: str = "Category:Event series") -> List[str]:
     params = {"action":"query","list":"categorymembers","cmtitle":category_title, "cmlimit":"max","format":"json"}
     titles: List[str] = []
     while True:
@@ -42,14 +42,14 @@ def get_eventSeries_pages(api_url: str, session, category_title: str = "Category
     return titles
 
 @task
-def get_category_pages(api_url: str, session, category_title: str) -> List[str]:
+def get_category_members(api_url: str, session, category_title: str) -> List[str]:
     params = {"action":"query","list":"categorymembers","cmtitle":category_title, "cmtype":"subcat", "cmlimit":"max","format":"json"}
     titles: List[str] = []
     while True:
         r = session.get(api_url, params=params, timeout=30)
         r.raise_for_status()
         data = r.json()
-        print(f"get_category_pages: data: {data}")
+        print(f"get_category_members: data: {data}")
         members = data.get("query", {}).get("categorymembers", [])
         for m in members:
             titles.append(m["title"])
