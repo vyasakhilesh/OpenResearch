@@ -10,10 +10,7 @@ import re
 from datetime import datetime
 from tasks.mw_api import (
     get_category_members,
-<<<<<<< HEAD
-=======
     get_all_categories,
->>>>>>> 0aa267f (added property and catefgory function)
     get_page_wikitext,
     create_page,
     edit_page,
@@ -114,6 +111,7 @@ def collect_all_categories_iterative(api_url, session, root_category, max_depth=
 
         try:
             subcats = get_category_members(api_url, session, category)
+            subcats = get_category_members(api_url, session, category)
         except Exception:
             # optionally log or handle transient errors; skip on failure
             subcats = []
@@ -141,16 +139,10 @@ def preprocessing_openresearch_categories(
     
     csrf_token, session = login_and_get_csrf(api_url, username, password)
         
-<<<<<<< HEAD
-    # 1. collect pages
-    # page_titles = collect_all_categories_iterative(api_url, session, "Category:Content")
-    page_titles = collect_all_categories_iterative(api_url, session, "Category:")
-=======
     # 1. collect all categories under some categories
     # page_titles = collect_all_categories_iterative(api_url, session, "Category:Content")
     """
     page_titles = collect_all_categories_iterative(api_url, session, "Category:Science")
->>>>>>> 0aa267f (added property and catefgory function)
     logger.info(f"Found {len(page_titles)} pages, e.g., {page_titles[0:50]}")
     # fix category wikitext
     fix_category_wikitext(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)

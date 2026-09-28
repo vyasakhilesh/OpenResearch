@@ -49,11 +49,7 @@ def get_category_members(api_url: str, session, category_title: str) -> List[str
         r = session.get(api_url, params=params, timeout=30)
         r.raise_for_status()
         data = r.json()
-<<<<<<< HEAD
-        print(f"get_category_members: data: {data}")
-=======
         # print(f"get_category_members: data: {data}")
->>>>>>> 0aa267f (added property and catefgory function)
         members = data.get("query", {}).get("categorymembers", [])
         for m in members:
             titles.append(m["title"])
