@@ -49,7 +49,11 @@ def get_category_members(api_url: str, session, category_title: str) -> List[str
         r = session.get(api_url, params=params, timeout=30)
         r.raise_for_status()
         data = r.json()
+<<<<<<< HEAD
         print(f"get_category_members: data: {data}")
+=======
+        # print(f"get_category_members: data: {data}")
+>>>>>>> 0aa267f (added property and catefgory function)
         members = data.get("query", {}).get("categorymembers", [])
         for m in members:
             titles.append(m["title"])
@@ -57,6 +61,88 @@ def get_category_members(api_url: str, session, category_title: str) -> List[str
             params.update(data["continue"])
         else:
             break
+    return titles
+
+@task
+def get_property_usage_count(api_url: str, session, property_name):
+    params = {"action": "browsebyproperty", "property": property_name, "format": "json",}
+    r = session.get(api_url, params=params, timeout=30)
+    r.raise_for_status()
+    data = r.json()
+
+    if "error" in data:
+        raise RuntimeError(f"API error: {data['error']}")
+
+    for info in data.get("query", {}).values():
+        if isinstance(info, dict) and "usageCount" in info:
+            return info["usageCount"]
+    return None
+
+
+def get_property_members(api_url: str, session, property_name, printouts=None, page_size=500, max_results=None):
+    session.headers.update({"User-Agent": "SMW-Property-Usage-Fetcher/1.0 (you@example.org)"})
+    printouts = printouts or [property_name]
+    print_part = "|".join(f"?{p}" for p in printouts)
+    results = []
+    offset = 0
+
+    while True:
+        query = f"[[{property_name}::+]]|{print_part}|limit={page_size}|offset={offset}"
+        params = {
+            "action": "ask",
+            "query": query,
+            "format": "json",
+        }
+
+        resp = session.get(api_url, params=params, timeout=30)
+        resp.raise_for_status()
+        data = resp.json()
+
+        if "error" in data:
+            raise RuntimeError(f"API error: {data['error']}")
+
+        batch = data.get("query", {}).get("results", {})
+        if isinstance(batch, dict):
+            for title, info in batch.items():
+                results.append({
+                    "title": info.get("fulltext", title),
+                    # "url": info.get("fullurl"),
+                    # "namespace": info.get("namespace"),
+                    "printouts": info.get("printouts", {}),
+                })
+
+        if max_results and len(results) >= max_results:
+            return results[:max_results]
+
+        next_offset = data.get("query-continue-offset")
+        if next_offset is None:
+            break
+        offset = next_offset
+
+    return results
+
+@task
+def get_all_categories(api_url: str, session, category_title: str = "") -> List[str]:
+    params = {"action":"query","list":"allcategories", "aclimit":"max", "format":"json"}
+    if category_title:
+        params["acprefix"] = category_title
+
+    titles: List[str] = []
+
+    while True:
+        response = session.get(url=api_url, params=params, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+        categories = data.get("query", {}).get("allcategories", [])
+        for category in categories:
+            titles.append(category["*"])
+
+        continuation = data.get("continue")
+        if not continuation:
+            break
+
+        params.update(continuation)
+
     return titles
 
 @task
