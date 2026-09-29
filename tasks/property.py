@@ -68,7 +68,7 @@ def fix_property_wikitext(
     total_page_titles = len(page_titles)
     
     for idx, page_title in enumerate(page_titles):
-        logger.info("Processing page %s:%s out of %s", idx, page_title, total_page_titles)
+        logger.info("Processing page %s:%s out of %s", page_title, idx, total_page_titles)
         try:
             property_wikitext = get_page_wikitext(api_url, page_title, session)
             property_wikitext_org = property_wikitext
