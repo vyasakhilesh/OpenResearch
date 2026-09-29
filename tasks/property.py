@@ -22,9 +22,9 @@ PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "INFO")
 
 
 PROPERTY_TEMPLATES = {
-    "Has location city": ("{{city_data}}", "{{city data}}", "{{state_data}}", "{{state data}}", "{{country_data}}", "{{country data}}", "{{Event", "{{event"),
-    "Has location state": ("{{state_data}}", "{{state data}}", "{{city_data}}", "{{city data}}", "{{country_data}}", "{{country data}}", "{{Event", "{{event"),
-    "Has location country": ("{{country_data}}", "{{country data}}", "{{city_data}}", "{{city data}}", "{{state_data}}", "{{state data}}", "{{Event", "{{event")
+    "Has location city": ("{{city_data}}", "{{city data}}", "{{Event", "{{event"),
+    "Has location state": ("{{state_data}}", "{{state data}}", "{{Event", "{{event"),
+    "Has location country": ("{{country_data}}", "{{country data}}", "{{Event", "{{event")
 }
 
 
@@ -65,18 +65,17 @@ def fix_property_wikitext(
             logger.warning("No values found for property %s on page %s", property_name, page.get("title", "unknown"))
     
     page_titles = list(set(page_titles))
+    total_page_titles = len(page_titles)
     
     for idx, page_title in enumerate(page_titles):
-        logger.info("Processing page %s:%s", idx, page_title)
+        logger.info("Processing page %s:%s out of %s", idx, page_title, total_page_titles)
         try:
             property_wikitext = get_page_wikitext(api_url, page_title, session)
             property_wikitext_org = property_wikitext
             logger.debug("Property Wikitext: %s", property_wikitext)
             
-            if any("{{Event", "{{event"):
-               property_wikitext = property_wikitext.replace("{{city_data}}", '')\
-                                                    .replace("{{state_data}}", '')\
-                                                    .replace("{{country_data}}", '')
+            if any(marker in property_wikitext for marker in ("{{Event", "{{event")):
+               property_wikitext = property_wikitext.replace(template_markers[0], '')
 
             if not any(marker in property_wikitext for marker in template_markers):
                 # add the expected template to the beginning of the page text
