@@ -75,7 +75,7 @@ def fix_property_wikitext(
             logger.debug("Property Wikitext: %s", property_wikitext)
             
             if any(marker in property_wikitext for marker in ("{{Event", "{{event")):
-               property_wikitext = property_wikitext.replace(template_markers[0], '')
+               property_wikitext = property_wikitext.replace(f"{template_markers[0]}\n", "")
 
             if not any(marker in property_wikitext for marker in template_markers):
                 # add the expected template to the beginning of the page text
