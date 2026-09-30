@@ -22,9 +22,10 @@ PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "INFO")
 
 
 PROPERTY_TEMPLATES = {
-    "Has location city": ("{{city_data}}", "{{city data}}", "{{Event", "{{event"),
+    # "Has location city": ("{{city_data}}", "{{city data}}", "{{Event", "{{event"),
     "Has location state": ("{{state_data}}", "{{state data}}", "{{Event", "{{event"),
-    "Has location country": ("{{country_data}}", "{{country data}}", "{{Event", "{{event")
+    # "Has location country": ("{{country_data}}", "{{country data}}", "{{Event", "{{event"),
+    "Field": ("{{research_field}}", "{{research_field", "{{research field", "{{Event", "{{event")
 }
 
 
@@ -60,13 +61,14 @@ def fix_property_wikitext(
         raw_values = page.get("printouts", {}).get(property_name, [])
         values = _normalize_property_values(raw_values)
         if values:
-            page_titles.append(", ".join(values))
+            logger.debug(f"Values:{values}")
+            # page_titles.append(", ".join(values))
+            page_titles.extend(values)
         else:
             logger.warning("No values found for property %s on page %s", property_name, page.get("title", "unknown"))
     
     page_titles = list(set(page_titles))
     total_page_titles = len(page_titles)
-    
     for idx, page_title in enumerate(page_titles):
         logger.info("Processing page %s:%s out of %s", page_title, idx, total_page_titles)
         try:
