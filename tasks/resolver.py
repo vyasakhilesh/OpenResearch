@@ -80,7 +80,7 @@ class PlaceResolver:
         return out
  
     def _readings(self, tokens):
-        score = (parts explained, country-match strength, city population); highest wins."""
+        # score = (parts explained, country-match strength, city population); highest wins
         keys = [norm(t) for t in tokens]
         options = [(None, 0, -1)]                         # (country, strength, token it came from)
         for i, t in enumerate(tokens):
