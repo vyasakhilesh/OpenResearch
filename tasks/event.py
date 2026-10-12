@@ -291,6 +291,18 @@ def fix_event_place(api_url: str, page_titles: List[str], session, csrf_token: s
                     new_params["State"] = state_new
                 if country_new:
                     new_params["Country"] = country_new
+                if not city_new and city and city not in [city_new, state_new, country_new]:
+                    logger.warning(f"Removing old city value for page_title: {page_title}, old city: {city}")
+                    event_wikitext = re.sub(r'^\|\s*City\s*=.*\n?', '', event_wikitext, flags=re.IGNORECASE | re.MULTILINE)
+                    new_params["WrongCity"] = city
+                if not state_new and state and state not in [city_new, state_new, country_new]:
+                    logger.warning(f"Removing old state value for page_title: {page_title}, old state: {state}")
+                    event_wikitext = re.sub(r'^\|\s*State\s*=.*\n?', '', event_wikitext, flags=re.IGNORECASE | re.MULTILINE)
+                    new_params["WrongState"] = state
+                if not country_new and country and country not in [city_new, state_new, country_new]:
+                    logger.warning(f"Removing old country value for page_title: {page_title}, old country: {country}")
+                    event_wikitext = re.sub(r'^\|\s*Country\s*=.*\n?', '', event_wikitext, flags=re.IGNORECASE | re.MULTILINE)
+                    new_params["WrongCountry"] = country
                 new_wikitext = set_multiple_params_in_template(event_wikitext, new_params, "Event")[0]
                 new_wikitext = reorder_event_template(new_wikitext)
                 summary = f"Fixed place for {page_title} from {location} to {city_new}, {state_new}, {country_new} (automated)"
@@ -335,6 +347,7 @@ def preprocessing_openresearch_events(
     # fix_event_wikitext(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
     
     # fix event places
+    page_titles = ['ICSGCE 2021', 'ICSCM 2023', 'ICSED 2024', ' ICSCM 2023', 'ICSCER 2017', 'ICS 2015', 'ICS 2009', 'ICSCA 2024']
     fix_event_place(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
         
     # fix event duplicates and clean template using LLM if needed
