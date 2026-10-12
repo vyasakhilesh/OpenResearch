@@ -57,11 +57,11 @@ class PlaceResolver:
     def _resolve_tokens(self, tokens):
         best = max(self._readings(tokens), key=lambda r: r[0], default=None)
         if best is None:
-            return {"city": None, "state": None, "country": None}
+            return {"City": None, "State": None, "Country": None}
         _, cc, city, state = best
-        return {"city": self._english(city) if city else None,
-                "state": self._english(state) if state else None,
-                "country": self.EN_COUNTRY.get(cc)}
+        return {"City": self._english(city) if city else None,
+                "State": self._english(state) if state else None,
+                "Country": self.EN_COUNTRY.get(cc)}
  
     def _english(self, gid):
         return self.en_pref.get(gid) or self.places[gid]["name"]
