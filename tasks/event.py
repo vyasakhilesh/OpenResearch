@@ -40,6 +40,8 @@ from tasks.utils import (
     convert_wiki_categories,
     replace_twitter_with_x
 )
+
+from tasks.resolver import PlaceResolver, norm
 from typing import List, Dict, Optional
 import os
 import pandas as pd
@@ -227,8 +229,8 @@ def fix_event_ordinal(api_url: str, page_titles: List[str], session, csrf_token:
         except Exception as e:
             logger.error("Fix Event Ordinal Exception for %s: %s", page_title, e)
         # else:
-        #    continue
-
+        #    continue        
+        
 
 def fix_merging_of_event_templates(api_url: str, page_titles: List[str], session, csrf_token: str, llm_api_key: Optional[str], dry_run: bool, logger):
     for idx, page_title in enumerate([page_title for page_title in page_titles if ' (Duplicate)' in page_title]):  # limit to first 10 for testing
@@ -258,7 +260,46 @@ def fix_merging_of_event_templates(api_url: str, page_titles: List[str], session
                     delete_page(api_url, source_title, csrf_token, session)
         except Exception as e:
             logger.error("Get Event Wikitext Exception for %s: %s", source_title, destination_title, e)
-            continue    
+            continue
+
+def fix_event_place(api_url: str, page_titles: List[str], session, csrf_token: str, llm_api_key: Optional[str], dry_run: bool, logger):
+    for idx, page_title in enumerate(page_titles):  # limit to first 10 for testing
+        logger.info(f"Processing page {idx}:{page_title}")
+        try:
+            event_wikitext = get_page_wikitext(api_url, page_title, session)
+            event_json = extract_event_fields_from_wikitext(event_wikitext)
+            logger.debug(f"""Event Page {page_title}: Json: {event_json} event_wikitext: {event_wikitext}""")
+            tpl, start, end = find_template_block(event_wikitext, "Event")
+            city = event_json.get("City", None)
+            state = event_json.get("State", None)
+            country = event_json.get("Country", None)
+            location = ', '.join(filter(None, [city, state, country]))
+            geonames_data_path = os.environ.get("GEONAMES_DATA_PATH", "./data/geonames")
+            resolver = PlaceResolver(geonames_data_path)
+            place_data = resolver.resolve(location)
+            logger.debug(f"Resolved place data for {page_title}: {place_data}")
+            city_new = place_data.get("City", None)
+            state_new = place_data.get("State", None)
+            country_new = place_data.get("Country", None)
+            if (city_new and city_new != city) or (state_new and state_new != state) or (country_new and country_new != country):
+                logger.info(f"Fixing place for page_title: {page_title}, old location: {location}, new location: {city_new}, {state_new}, {country_new}")
+                # only update the parameters which are not None
+                new_params = {}
+                if city_new:
+                    new_params["City"] = city_new
+                if state_new:
+                    new_params["State"] = state_new
+                if country_new:
+                    new_params["Country"] = country_new
+                new_wikitext = set_multiple_params_in_template(event_wikitext, new_params, "Event")[0]
+                new_wikitext = reorder_event_template(new_wikitext)
+                summary = f"Fixed place for {page_title} from {location} to {city_new}, {state_new}, {country_new} (automated)"
+                logger.debug(f"New wikitext for {page_title}: {new_wikitext}")
+                # res = edit_page(api_url, page_title, new_wikitext, csrf_token, session, summary, dry_run)
+                # logger.info("Edit result for page_title %s: result: %s", page_title, res['error']['code'] if res.get('error') else res)
+        except Exception as e:
+            logger.error("Fix Event Place Exception for %s: %s", page_title, e)
+    
   
 @task(name="preprocessing-openresearch-events", description="preprocessing OpenResearch event pages using core data details")
 def preprocessing_openresearch_events(
@@ -291,7 +332,10 @@ def preprocessing_openresearch_events(
     # fix_event_ordinal(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
     
     # fix event wikitext
-    fix_event_wikitext(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
+    # fix_event_wikitext(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
+    
+    # fix event places
+    fix_event_place(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
         
     # fix event duplicates and clean template using LLM if needed
     # fix_event_duplicates(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
