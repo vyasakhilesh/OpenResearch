@@ -81,7 +81,7 @@ def fix_property_wikitext(
             
             # todo - temporary fix for the issue of wrong template markers in the property_wikitext   
             # remove existing template markers from the property_wikitext (e.g. {{city_data}} or {{city data}})
-            for marker in template_markers:
+            for marker in template_markers[0:-2]:
                 property_wikitext = property_wikitext.replace(f"{marker}\n", "")
 
             if not any(marker in property_wikitext for marker in template_markers):
