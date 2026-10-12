@@ -347,7 +347,6 @@ def preprocessing_openresearch_events(
     # fix_event_wikitext(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
     
     # fix event places
-    page_titles = ['ICSGCE 2021', 'ICSCM 2023', 'ICSED 2024', ' ICSCM 2023', 'ICSCER 2017', 'ICS 2015', 'ICS 2009', 'ICSCA 2024']
     fix_event_place(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
         
     # fix event duplicates and clean template using LLM if needed
