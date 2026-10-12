@@ -246,7 +246,9 @@ def extract_event_fields_from_wikitext(text: str) -> Dict[str, Optional[str]]:
     # Find the first {{Event ... }} block (non-greedy)
     m = re.search(r"\{\{\s*Event\b(.*?)\}\}", text, re.DOTALL | re.IGNORECASE)
     if not m:
-        return {"Series": None, "Title": None, "Field": None, 'Acronym': None, 'Ordinal': None}
+        return {"Series": None, "Title": None, "Field": None, 
+                'Acronym': None, 'Ordinal': None,
+                'Has location city': None, 'Has location state': None, 'Has location country': None}
 
     body = m.group(1)
 
@@ -270,6 +272,9 @@ def extract_event_fields_from_wikitext(text: str) -> Dict[str, Optional[str]]:
     field = fields.get("field") or None
     acronym = fields.get("acronym") or None
     ordinal = fields.get("ordinal") or None
+    has_city = fields.get("Has location city") or None
+    has_state = fields.get("Has location state") or None
+    has_country = fields.get("Has location country") or None
 
     # Normalize empty strings to None
     def _none_if_empty(x):
@@ -279,7 +284,10 @@ def extract_event_fields_from_wikitext(text: str) -> Dict[str, Optional[str]]:
         "Title": _none_if_empty(title),
         "Acronym": _none_if_empty(acronym),
         "Field":  _none_if_empty(field),
-        "Ordinal": _none_if_empty(ordinal)
+        "Ordinal": _none_if_empty(ordinal),
+        "Has location city": _none_if_empty(has_city),
+        "Has location state": _none_if_empty(has_state),
+        "Has location country": _none_if_empty(has_country)
     }
     
 def extract_eventSeries_from_wikitext(text: str) -> Dict[str, Optional[str]]:
