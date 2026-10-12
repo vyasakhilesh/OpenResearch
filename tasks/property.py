@@ -78,6 +78,11 @@ def fix_property_wikitext(
             
             if any(marker in property_wikitext for marker in ("{{Event", "{{event")):
                property_wikitext = property_wikitext.replace(f"{template_markers[0]}\n", "")
+            
+            # todo - temporary fix for the issue of wrong template markers in the property_wikitext   
+            # remove existing template markers from the property_wikitext (e.g. {{city_data}} or {{city data}})
+            for marker in template_markers:
+                property_wikitext = property_wikitext.replace(f"{marker}\n", "")
 
             if not any(marker in property_wikitext for marker in template_markers):
                 # add the expected template to the beginning of the page text
