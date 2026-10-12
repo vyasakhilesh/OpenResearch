@@ -295,8 +295,8 @@ def fix_event_place(api_url: str, page_titles: List[str], session, csrf_token: s
                 new_wikitext = reorder_event_template(new_wikitext)
                 summary = f"Fixed place for {page_title} from {location} to {city_new}, {state_new}, {country_new} (automated)"
                 logger.debug(f"New wikitext for {page_title}: {new_wikitext}")
-                # res = edit_page(api_url, page_title, new_wikitext, csrf_token, session, summary, dry_run)
-                # logger.info("Edit result for page_title %s: result: %s", page_title, res['error']['code'] if res.get('error') else res)
+                res = edit_page(api_url, page_title, new_wikitext, csrf_token, session, summary, dry_run)
+                logger.info("Edit result for page_title %s: result: %s", page_title, res['error']['code'] if res.get('error') else res)
         except Exception as e:
             logger.error("Fix Event Place Exception for %s: %s", page_title, e)
     
