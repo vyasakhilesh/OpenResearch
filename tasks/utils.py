@@ -248,7 +248,7 @@ def extract_event_fields_from_wikitext(text: str) -> Dict[str, Optional[str]]:
     if not m:
         return {"Series": None, "Title": None, "Field": None, 
                 'Acronym': None, 'Ordinal': None,
-                'Has location city': None, 'Has location state': None, 'Has location country': None}
+                'City': None, 'State': None, 'Country': None}
 
     body = m.group(1)
 
@@ -272,9 +272,9 @@ def extract_event_fields_from_wikitext(text: str) -> Dict[str, Optional[str]]:
     field = fields.get("field") or None
     acronym = fields.get("acronym") or None
     ordinal = fields.get("ordinal") or None
-    has_city = fields.get("Has location city") or None
-    has_state = fields.get("Has location state") or None
-    has_country = fields.get("Has location country") or None
+    city = fields.get("city") or None
+    state = fields.get("state") or None
+    country = fields.get("country") or None
 
     # Normalize empty strings to None
     def _none_if_empty(x):
@@ -285,9 +285,9 @@ def extract_event_fields_from_wikitext(text: str) -> Dict[str, Optional[str]]:
         "Acronym": _none_if_empty(acronym),
         "Field":  _none_if_empty(field),
         "Ordinal": _none_if_empty(ordinal),
-        "Has location city": _none_if_empty(has_city),
-        "Has location state": _none_if_empty(has_state),
-        "Has location country": _none_if_empty(has_country)
+        "City": _none_if_empty(city),
+        "State": _none_if_empty(state),
+        "Country": _none_if_empty(country)
     }
     
 def extract_eventSeries_from_wikitext(text: str) -> Dict[str, Optional[str]]:
