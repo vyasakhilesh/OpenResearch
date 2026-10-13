@@ -96,6 +96,10 @@ def fix_property_wikitext(
                     logger.error("Edit result for page_title %s: result: %s", page_title, res["error"]["code"])
                 else:
                     logger.info("successfully edited page_title: %s", page_title)
+            # property_wikitext is empty or None, log a warning and delete the page if it exists
+            if not property_wikitext:
+                logger.warning("Property Wikitext is empty for page %s", page_title)
+                delete_page(api_url, page_title, csrf_token, session)
         except Exception as exc:
             logger.error("Get property Wikitext Exception for %s: %s", page_title, exc)
             continue
