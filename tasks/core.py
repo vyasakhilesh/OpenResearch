@@ -103,7 +103,7 @@ def extract_core_conference_details(url: str, source:str="Source: ICORE2026", ra
         "Acronym":acronym,
         "DblpSeries":dblp_source,
          rank :icore_rank,
-        "Field":f"{icore_field_1}, {icore_field_2}, {icore_field_3}",
+        "Field":f"{icore_field_1}; {icore_field_2}; {icore_field_3}",
         "field_of_research_1":icore_field_1,
         "field_of_research_2":icore_field_2,
         "field_of_research_3":icore_field_3
