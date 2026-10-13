@@ -79,6 +79,7 @@ def clean_property_wikitext(
                 if marker in property_wikitext:
                     logger.info("Removing template marker %s from page %s", marker, page_title)
                     property_wikitext = property_wikitext.replace(f"{marker}\n", "")
+                    property_wikitext = property_wikitext.replace(f"{marker}", "")
                         
             if property_wikitext != property_wikitext_org:
                 summary = f"Edited {page_title} with new text {property_wikitext}"
@@ -125,12 +126,8 @@ def fix_property_wikitext(
             logger.debug("Property Wikitext: %s", property_wikitext)
             
             if any(marker in property_wikitext for marker in ("{{Event", "{{event")):
-               property_wikitext = property_wikitext.replace(f"{template_markers[0]}\n", "")
-            
-            # todo - temporary fix for the issue of wrong template markers in the property_wikitext   
-            # remove existing template markers from the property_wikitext (e.g. {{city_data}} or {{city data}})
-            for marker in template_markers[0:-2]:
-                property_wikitext = property_wikitext.replace(f"{marker}\n", "")
+               property_wikitext = property_wikitext.replace(f"{template_markers[0]}", "")
+               
 
             if not any(marker in property_wikitext for marker in template_markers):
                 # add the expected template to the beginning of the page text
@@ -168,7 +165,6 @@ def preprocessing_openresearch_properties(
     logger.setLevel(PREFECT_LOGGING_LEVEL)
     csrf_token, session = login_and_get_csrf(api_url, username, password)
     
-    """
     for property_name, template_markers in PROPERTY_TEMPLATES.items():
         members = get_property_members(api_url, session, property_name, printouts=[property_name])
         logger.info("Fetched %s pages for property %s; sample: %s", len(members), property_name, members[:10])
@@ -182,9 +178,9 @@ def preprocessing_openresearch_properties(
             dry_run,
             logger,
             template_markers=template_markers,
-        )"""
+        )
     
-    
+    """
     for property_name, template_markers in PROPERTY_TEMPLATES.items():
             members = get_property_members(api_url, session, property_name, printouts=[property_name])
             logger.info("Fetched %s pages for property %s; sample: %s", len(members), property_name, members[:10])
@@ -198,6 +194,6 @@ def preprocessing_openresearch_properties(
                 dry_run,
                 logger,
                 template_markers=[marker for markers in PROPERTY_TEMPLATES.values() for marker in markers[0:-2]],
-            )
+            )"""
 
     return True
