@@ -8,6 +8,7 @@ import pandas as pd
 from prefect import task, get_run_logger
 import os
 import numpy as np
+from time import sleep
 
 # PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "DEBUG")
 PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "INFO")
@@ -27,7 +28,7 @@ SESSION = requests.Session()
 HTTP_ADAPTER = HTTPAdapter(max_retries=RETRY_STRATEGY, pool_connections=20, pool_maxsize=20)
 SESSION.mount("http://", HTTP_ADAPTER)
 SESSION.mount("https://", HTTP_ADAPTER)
-SESSION.headers.update({"User-Agent": "OpenResearchBot/1.0"})
+# SESSION.headers.update({"User-Agent": "OpenResearchBot/1.0"})
 
 def extract_core_conference_details(url: str, source:str="Source: ICORE2026", rank: str = "has CORE2026 Rank") -> dict[str, str]:
     ROW_PATTERN = re.compile(r'<div class="row [^"]+">(.*?)</div>', re.DOTALL | re.IGNORECASE)
@@ -77,6 +78,7 @@ def extract_core_conference_details(url: str, source:str="Source: ICORE2026", ra
     icore_field_2 = ""
     icore_field_3 = ""
     for index, row in enumerate(rows):
+        # print(f"Row {index}: {row}")  # Debugging line to print each row
         if row == source:
             for next_row in rows[index + 1 :]:
                 if next_row.startswith("Source:"):
@@ -97,8 +99,10 @@ def extract_core_conference_details(url: str, source:str="Source: ICORE2026", ra
                                   .replace(" ( citation )", '')).strip()
             break
 
-
+    # print(f"Extracted details: Title={titles[1]}, Acronym={acronym}, DBLP Source={dblp_source}, Rank={icore_rank}, Field1={icore_field_1}, Field2={icore_field_2}, Field3={icore_field_3}")  # Debugging line to print extracted details
+    # sleep(10)
     return {
+        "Index": url.split("/")[-1],
         "Title":titles[1],
         "Acronym":acronym,
         "DblpSeries":dblp_source,

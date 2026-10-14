@@ -30,7 +30,7 @@ def create_core_data(years: list = ["2026"]):
             logger.info(f"Created core data for year {year} with {len(df_core_details)} unique entries.")
             
     # merge all details dataframes into a single dataframe
-    keys = ["Title", "Acronym"]
+    keys = ["Index", "Title", "Acronym"]
 
     def prep(year):
         df= pd.read_csv(f"./data/coreranking/CORE_{year}_details.csv")
