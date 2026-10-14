@@ -89,14 +89,17 @@ def extract_core_conference_details(url: str, source:str="Source: ICORE2026", ra
                     icore_field_1 = re.sub(r'^\s*\d+\s*-\s*', '', next_row.removeprefix("Field Of Research:").strip()\
                                   .replace(" ( h-index )", '')\
                                   .replace(" ( citation )", '')).strip()
+                    icore_field_1 = re.sub(r"[†‡]", "", icore_field_1).strip()
                 elif not icore_field_2 and next_row.startswith("Field Of Research:"):
                     icore_field_2 = re.sub(r'^\s*\d+\s*-\s*', '', next_row.removeprefix("Field Of Research:").strip()\
                                   .replace(" ( h-index )", '')\
                                   .replace(" ( citation )", '')).strip()
+                    icore_field_2 = re.sub(r"[†‡]", "", icore_field_2).strip()
                 elif not icore_field_3 and next_row.startswith("Field Of Research:"):
                     icore_field_3 = re.sub(r'^\s*\d+\s*-\s*', '', next_row.removeprefix("Field Of Research:").strip()\
                                   .replace(" ( h-index )", '')\
                                   .replace(" ( citation )", '')).strip()
+                    icore_field_3 = re.sub(r"[†‡]", "", icore_field_3).strip()
             break
 
     # print(f"Extracted details: Title={titles[1]}, Acronym={acronym}, DBLP Source={dblp_source}, Rank={icore_rank}, Field1={icore_field_1}, Field2={icore_field_2}, Field3={icore_field_3}")  # Debugging line to print extracted details
