@@ -18,16 +18,19 @@ def openresearch_eventSeries(api_url: str,
                             llm_api_key: str = None,
                             dry_run: bool = True):
     
-    """
+    
     # preprocessing open research event series pages using core data details
-    preprocessing_core_openresearch_eventSeries(api_url, 
+    """
+    preprocessing_core_openresearch_eventSeries(api_url,
                                                 username,
                                                 password,
                                                 core_all_details_path,
                                                 template_name=template_name,
                                                 dry_run=dry_run,
     )
+    """
     
+    """
     # Create open research event series pages using core data details if does not exist
     create_core_openresearch_eventSeries(api_url,
                                     username,
@@ -72,7 +75,7 @@ if __name__ == "__main__":
                              USER,
                              PASS,
                              core_all_details_path,
-                             "Event series",
+                             "Event Series",
                              llm_api_key='', #os.environ.get("OPENROUTER_API_KEY"),
                              dry_run=False,
                              )
