@@ -1031,7 +1031,7 @@ def title_case_preserve_acronyms(
     stopwords: Optional[Iterable[str]] = None
 ) -> str:
 
-    _SEP_RE = re.compile(r'([/,_-])')  # capture separators so they are preserved
+    _SEP_RE = re.compile(r'([/,;_-])')  # capture separators so they are preserved
     if not value:
         return ""
 
@@ -1040,6 +1040,7 @@ def title_case_preserve_acronyms(
     # only remove quotes, not apostrophes
     value = re.sub(r'^[\'"]+|[\'"]+$', '', value)
     value = re.sub(r'\s*,\s*', ', ', value)
+    value = re.sub(r'\s*;\s*', '; ', value)
         
     def transform_subtoken(sub: str, is_first_overall: bool) -> str:
         if not sub:
@@ -1085,6 +1086,7 @@ def transform_event_values(text: str) -> str:
         out_lines = []
         for line in lines:
             # Match lines like "|Key=Value" with optional leading whitespace
+            line = line.strip().rstrip(';').strip().rstrip(';').strip()
             m = re.match(r'(\s*\|\s*([^=]+?)\s*=\s*)(.*)', line, re.IGNORECASE)
             if not m:
                 out_lines.append(line)
@@ -1116,6 +1118,7 @@ def transform_eventSeries_values(text: str) -> str:
         out_lines = []
         for line in lines:
             # Match lines like "|Key=Value" with optional leading whitespace
+            line = line.strip().rstrip(';').strip().rstrip(';').strip()
             m = re.match(r'(\s*\|\s*([^=]+?)\s*=\s*)(.*)', line, re.IGNORECASE)
             if not m:
                 out_lines.append(line)
