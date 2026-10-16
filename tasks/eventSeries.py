@@ -39,10 +39,10 @@ def build_scientific_fields_prompt(text: str) -> str:
 You are an information extraction system.
 
 Task:
-Extract only the meaningful primary scientific fields explicitly present in the input text.
+Extract only the meaningful scientific research fields explicitly present in the input text.
 
 Rules:
-1. Return all primary scientific fields found in the text.
+1. Return all scientific research fields found in the text.
 2. Preserve complete field names and intelligently combine adjacent terms that belong to the same field.
 3. Do not split a scientific field into multiple entries when it forms a single recognized field.
 4. Do not infer, add, or hallucinate fields that are not present in the text.
@@ -372,10 +372,11 @@ def fix_eventSeries_wikitext_using_llm(api_url: str, page_titles: List[str], ses
             if llm_api_key and field and ';' not in field:
                 prompt = build_scientific_fields_prompt(field)
                 llm_output = clean_scientific_fields(llm_api_key, prompt)
+                llm_output = eval(llm_output) if llm_output else None
                 logger.debug(f"LLM output for {page_title}: {llm_output}")
                 if llm_output:
-                    field = '; '.join(eval(llm_output))  # convert the string representation of list to actual list and join with semicolon
-                    eventSeries_wikitext, changed, old_tpl = set_multiple_params_in_template(eventSeries_wikitext, {"Field": llm_output}, "Event series", False)
+                    field = '; '.join(llm_output)  # convert the string representation of list to actual list and join with semicolon
+                    eventSeries_wikitext, changed, old_tpl = set_multiple_params_in_template(eventSeries_wikitext, {"Field": field}, "Event series", False)
             summary = f"Cleaned {page_title} with new field {field}"
             if eventSeries_wikitext != eventSeries_wikitext_org:
                 res = edit_page(api_url, page_title, eventSeries_wikitext, csrf_token, session, summary, dry_run)
@@ -417,7 +418,7 @@ def preprocessing_openresearch_eventSeries(
     # fix_eventSeries_wikitext(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
     
     # fix event wikitext using LLM if llm_api_key is provided
-    fix_eventSeries_wikitext_using_llm(api_url, page_titles[0:20], session, csrf_token, llm_api_key, dry_run, logger)
+    fix_eventSeries_wikitext_using_llm(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
         
     return True
 
