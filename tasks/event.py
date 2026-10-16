@@ -72,7 +72,7 @@ Output requirements::
   - Ordinal of the event and it must be between 1 to 200 and must not be a year. e.g 24 for 24th event, 1 for 1st
   - Type must be one of Conference, Workshop, Tutorial, Symposium
   - Series must be abbreviation of event series, e.g. ICWE
-  - Field must be a primary scientific field of the event
+  - Field must be the primary scientific fields of the event and must be separated by semicolons. e.g. Data management and data science; Machine learning; Artificial intelligence
   - Dates keys (Start date, End date, Submission deadline, Abstract deadline, Notification, Camera ready) must use YYYY-MM-DD format.
   - Keys (Has host organization, has general chair, has program chair) must be names of organizations or persons.
   - Keys (Submitted papers, Accepted papers, Accepted short papers) must be positive integer and cannot be zero or unknown.

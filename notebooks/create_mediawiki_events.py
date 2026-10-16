@@ -286,7 +286,7 @@ Title: Full title of the given event, e.g. "5th European Semantic Web Conference
 Ordinal: Ordinal of the event e.g. 1 for 1st.
 Series: Abbreviation of event series, in case the event belongs to a continuing series
 Type: Type of event e.g. "Conference", "Workshop", "Symposium", "Tutorial" etc.
-Field: Primary scientific field of the event
+Field: must be the primary scientific fields of the event and must be separated by semicolons. e.g. Data management and data science; Machine learning; Artificial intelligence
 Start date: Start date of the event in YYYY-MM-DD format
 End date: End date of the event in YYYY/MM/
 Submission deadline: General deadline for (most relevant kinds of) submissions in YYYY-MM-DD format
