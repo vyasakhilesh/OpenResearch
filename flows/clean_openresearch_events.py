@@ -24,7 +24,7 @@ def build_event_fields_extraction_prompt(
 ) -> str:
     """
     Build a single-string prompt for an LLM that requests extraction of the given fields.
-    - title: primary name of the entity (e.g., conference title)
+    - title: primary name of the entity (e.g. conference title)
     - acronym: disambiguating identifiers
     - target_year: integer year or None
     - fields: comma-separated list of fields with types, e.g. "Year:int, City:str, State:str, Country:str, Confidence:str"
