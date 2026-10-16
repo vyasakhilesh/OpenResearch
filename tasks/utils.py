@@ -290,7 +290,7 @@ def extract_event_fields_from_wikitext(text: str) -> Dict[str, Optional[str]]:
         "Country": _none_if_empty(country)
     }
     
-def extract_eventSeries_from_wikitext(text: str) -> Dict[str, Optional[str]]:
+def extract_eventSeries_fields_from_wikitext(text: str) -> Dict[str, Optional[str]]:
     """
     Parse a MediaWiki Event Series template block and return a dict with keys:
     Title, Field, Acronym Values are strings or None.

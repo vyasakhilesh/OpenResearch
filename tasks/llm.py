@@ -6,6 +6,7 @@ import re
 import json
 from tasks.utils import _find_code_fence_content, _extract_balanced_braces, _clean_json_like
 import ast
+from time import sleep
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/responses"
 PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "INFO")  # Set default logging level to INFO if not specified
@@ -196,3 +197,12 @@ def fix_event_template(text: str) -> Tuple[Optional[str], Optional[str]]:
         return None, "Unbalanced double braces after fix"
     fixed_text = t[:start] + fixed_template + t[end:]
     return fixed_text, None
+
+
+def clean_scientific_fields(llm_api_key: str, prompt: str) -> Optional[str]:
+    resp_json = call_openrouter_task(prompt, llm_api_key)
+    if not resp_json:
+        return None
+    text = extract_text_from_response(resp_json)
+    sleep(2)  # Add a small delay to avoid overwhelming the LLM service
+    return text

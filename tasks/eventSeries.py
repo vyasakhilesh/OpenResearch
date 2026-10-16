@@ -1,6 +1,8 @@
 from ast import pattern
 import re
+from click import prompt
 from prefect import get_run_logger, task
+from tasks.llm import clean_scientific_fields
 from tasks.mw_auth import login_and_get_csrf
 from tasks.mw_api import (
     get_event_members,
@@ -11,7 +13,7 @@ from tasks.mw_api import (
     delete_page,
 )
 from tasks.mw_helper import set_multiple_params_in_template
-from tasks.utils import (extract_eventSeries_from_wikitext, 
+from tasks.utils import (extract_eventSeries_fields_from_wikitext, 
                          string_similarity_levenshtein, 
                          string_similarity_rapidfuzz,
                          reorder_event_template,
@@ -26,10 +28,53 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Optional
 from datetime import datetime
+from time import sleep
 
 # PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "DEBUG")
 PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "INFO")  # Set default logging level to ERROR if not specified
 
+
+def build_scientific_fields_prompt(text: str) -> str:
+    prompt = f"""
+You are an information extraction system.
+
+Task:
+Extract only the meaningful primary scientific fields explicitly present in the input text.
+
+Rules:
+1. Return all primary scientific fields found in the text.
+2. Preserve complete field names and intelligently combine adjacent terms that belong to the same field.
+3. Do not split a scientific field into multiple entries when it forms a single recognized field.
+4. Do not infer, add, or hallucinate fields that are not present in the text.
+5. Do not include explanations, reasoning, labels, markdown, or any text outside the output.
+6. Output must be a valid Python-style list of strings.
+
+Examples:
+
+Input:
+Distributed Computing, and Systems Software, Human-Centred Computing, Artificial Intelligence
+
+Output:
+["Distributed Computing and Systems Software", "Human-Centred Computing", "Artificial Intelligence"]
+
+Input:
+Machine Learning Data Management and Data Science Applied Computing
+
+Output:
+["Machine Learning", "Data Management and Data Science", "Applied Computing"]
+
+Input:
+Machine Learning
+
+Output:
+["Machine Learning"]
+
+Input:
+{text}
+
+Output:
+"""
+    return prompt.strip()
     
 @task(name="preprocessing_core_openresearch_eventSeries", description="preprocessing OpenResearch event series pages using core data details")
 def preprocessing_core_openresearch_eventSeries(
@@ -57,7 +102,7 @@ def preprocessing_core_openresearch_eventSeries(
         logger.info(f"Processing page {page_title}")
         try:
             series_wikitext = get_page_wikitext(api_url, page_title, session)
-            series_json = extract_eventSeries_from_wikitext(series_wikitext)
+            series_json = extract_eventSeries_fields_from_wikitext(series_wikitext)
             logger.debug(f"""Series Page {page_title}: Json: {series_json} series_wikitext: {series_wikitext}""")
             series_title = series_json.get('Title', None)
             series_acronym = series_json.get('Acronym', page_title)  # default to page_title if Acronym not found
@@ -78,7 +123,7 @@ def preprocessing_core_openresearch_eventSeries(
                 logger.debug(f"Found matching row in CORE_details for acronym {series_acronym}: {row}")
                 title = row['Title'].strip()
                 acronym = row['Acronym'].strip()
-                field = row['Field'].strip()
+                field = row['Field'].strip().rstrip(';').strip().rstrip(';').strip()  # remove trailing semicolons and extra spaces
                 DblpSeries = row['DblpSeries'].strip()
                 parameter_to_set = {"Acronym": acronym, 
                                     "Field": field, 
@@ -141,7 +186,7 @@ def create_core_openresearch_eventSeries(
     for page_title in page_titles:  # limit to first 10 for testing
         try:
             series_wikitext = get_page_wikitext(api_url, page_title, session)
-            series_json = extract_eventSeries_from_wikitext(series_wikitext)
+            series_json = extract_eventSeries_fields_from_wikitext(series_wikitext)
             logger.debug(f"""Series Page {page_title}: Json: {series_json} series_wikitext: {series_wikitext}""")
             series_title = series_json.get('Title', None)
             series_acronym = series_json.get('Acronym', page_title)  # default to page_title if Acronym not found
@@ -163,7 +208,7 @@ def create_core_openresearch_eventSeries(
             if acronym not in series_acronyms and acronym.strip() != '':
                 logger.info(f"Creating new page for acronym {acronym} as it does not exist in OpenResearch")
                 title = row['Title'].strip()
-                field = row['Field'].strip()
+                field = row['Field'].strip().rstrip(';').strip().rstrip(';').strip()
                 DblpSeries = row['DblpSeries'].strip()
                 parameter_to_set = {"Acronym": acronym, 
                                     "Field": field,
@@ -218,11 +263,11 @@ def deduplicate_openresearch_eventSeries(
     
     def comparing_titles(api_url, session, page_title, other_page_title):
         wikitext1 = get_page_wikitext(api_url, page_title, session)
-        series_json = extract_eventSeries_from_wikitext(wikitext1)
+        series_json = extract_eventSeries_fields_from_wikitext(wikitext1)
         title1 = series_json.get('Title', page_title)
         
         wikitext2 = get_page_wikitext(api_url, other_page_title, session)
-        series_json = extract_eventSeries_from_wikitext(wikitext2)
+        series_json = extract_eventSeries_fields_from_wikitext(wikitext2)
         title2 = series_json.get('Title', other_page_title)
         
         similarity = string_similarity_levenshtein(title1, title2)
@@ -281,7 +326,7 @@ def fix_eventSeries_wikitext(api_url: str, page_titles: List[str], session, csrf
         try:
             eventSeries_wikitext = get_page_wikitext(api_url, page_title, session)
             eventSeries_wikitext_org = eventSeries_wikitext
-            event_json = extract_eventSeries_from_wikitext(eventSeries_wikitext)
+            event_json = extract_eventSeries_fields_from_wikitext(eventSeries_wikitext)
             logger.debug(f"""Event series Page {page_title}: Json: {event_json} eventSeries_wikitext: {eventSeries_wikitext}""")
             acronym = event_json.get("Acronym", None)
             # fix acronym
@@ -312,6 +357,36 @@ def fix_eventSeries_wikitext(api_url: str, page_titles: List[str], session, csrf
         except Exception as e:
             logger.error("Get Event Wikitext Exception for %s: %s", page_title, e)
             continue
+
+def fix_eventSeries_wikitext_using_llm(api_url: str, page_titles: List[str], session, csrf_token: str, llm_api_key: Optional[str], dry_run: bool, logger):
+    for idx, page_title in enumerate(page_titles):  # limit to first 10 for testing
+        logger.info(f"Processing page {idx}:{page_title}")
+        # fix duplicates and clean template using LLM if needed
+        try:
+            eventSeries_wikitext = get_page_wikitext(api_url, page_title, session)
+            eventSeries_wikitext_org = eventSeries_wikitext
+            event_json = extract_eventSeries_fields_from_wikitext(eventSeries_wikitext)
+            logger.debug(f"""Event series Page {page_title}: Json: {event_json} eventSeries_wikitext: {eventSeries_wikitext}""")
+            field = event_json.get("Field", None)
+            # use LLM to fix separate the fields using semicolons
+            if llm_api_key and field and ';' not in field:
+                prompt = build_scientific_fields_prompt(field)
+                llm_output = clean_scientific_fields(llm_api_key, prompt)
+                logger.debug(f"LLM output for {page_title}: {llm_output}")
+                if llm_output:
+                    field = '; '.join(eval(llm_output))  # convert the string representation of list to actual list and join with semicolon
+                    eventSeries_wikitext, changed, old_tpl = set_multiple_params_in_template(eventSeries_wikitext, {"Field": llm_output}, "Event series", False)
+            summary = f"Cleaned {page_title} with new field {field}"
+            if eventSeries_wikitext != eventSeries_wikitext_org:
+                res = edit_page(api_url, page_title, eventSeries_wikitext, csrf_token, session, summary, dry_run)
+                if res.get('error'):
+                    logger.error("Edit result for page_title %s: result: %s", page_title, res['error']['code'])
+                else:
+                    logger.info(f"successfully edit result for page_title: {page_title}")
+            sleep(10)  # Add a small delay to avoid overwhelming the LLM service
+        except Exception as e:
+            logger.error("Get Event Wikitext Exception for %s: %s", page_title, e)
+            continue
             
 
 @task(name="preprocessing-openresearch-eventSeries", description="preprocessing OpenResearch event series pages")
@@ -339,7 +414,10 @@ def preprocessing_openresearch_eventSeries(
     
     
     # fix event wikitext
-    fix_eventSeries_wikitext(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
+    # fix_eventSeries_wikitext(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
+    
+    # fix event wikitext using LLM if llm_api_key is provided
+    fix_eventSeries_wikitext_using_llm(api_url, page_titles[0:20], session, csrf_token, llm_api_key, dry_run, logger)
         
     return True
 

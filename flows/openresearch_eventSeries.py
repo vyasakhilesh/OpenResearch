@@ -76,7 +76,7 @@ if __name__ == "__main__":
                              PASS,
                              core_all_details_path,
                              "Event Series",
-                             llm_api_key='', #os.environ.get("OPENROUTER_API_KEY"),
+                             llm_api_key=os.environ.get("OPENROUTER_API_KEY"),
                              dry_run=False,
                              )
     # create_openresearch_events_flow.serve(API, USER, PASS, core_26_dict, core_23_dict, TARGET_YEARS, dry_run=False, llm_api_key=os.environ.get("OPENROUTER_API_KEY"))
