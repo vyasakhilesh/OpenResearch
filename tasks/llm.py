@@ -204,5 +204,5 @@ def clean_scientific_fields(llm_api_key: str, prompt: str) -> Optional[str]:
     if not resp_json:
         return None
     text = extract_text_from_response(resp_json)
-    sleep(2)  # Add a small delay to avoid overwhelming the LLM service
+    # sleep(2)  # Add a small delay to avoid overwhelming the LLM service
     return text
