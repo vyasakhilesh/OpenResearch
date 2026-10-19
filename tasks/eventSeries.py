@@ -334,6 +334,7 @@ def fix_eventSeries_wikitext_using_llm(api_url: str, page_titles: List[str], ses
                 logger.debug(f"LLM output for {page_title}: {llm_output}")
                 if llm_output:
                     field = '; '.join(llm_output)  # convert the string representation of list to actual list and join with semicolon
+                    sleep(5)  # Add a small delay to avoid overwhelming the LLM service
                     eventSeries_wikitext, changed, old_tpl = set_multiple_params_in_template(eventSeries_wikitext, {"Field": field}, "Event series", False)
             summary = f"Cleaned {page_title} with new field {field}"
             if eventSeries_wikitext != eventSeries_wikitext_org:
@@ -342,7 +343,6 @@ def fix_eventSeries_wikitext_using_llm(api_url: str, page_titles: List[str], ses
                     logger.error("Edit result for page_title %s: result: %s", page_title, res['error']['code'])
                 else:
                     logger.info(f"successfully edit result for page_title: {page_title}")
-            sleep(5)  # Add a small delay to avoid overwhelming the LLM service
         except Exception as e:
             logger.error("Get Event Wikitext Exception for %s: %s", page_title, e)
             continue
