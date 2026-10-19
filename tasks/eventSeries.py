@@ -2,7 +2,7 @@ from ast import pattern
 import re
 from click import prompt
 from prefect import get_run_logger, task
-from tasks.llm import clean_scientific_fields
+from tasks.llm import clean_scientific_fields, build_scientific_fields_prompt
 from tasks.mw_auth import login_and_get_csrf
 from tasks.mw_api import (
     get_event_members,
@@ -34,48 +34,6 @@ from time import sleep
 PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "INFO")  # Set default logging level to ERROR if not specified
 
 
-def build_scientific_fields_prompt(text: str) -> str:
-    prompt = f"""
-You are an information extraction system.
-
-Task:
-Extract only the meaningful scientific research fields explicitly present in the input text.
-
-Rules:
-1. Return all scientific research fields found in the text.
-2. Preserve complete field names and intelligently combine adjacent terms that belong to the same field.
-3. Do not split a scientific field into multiple entries when it forms a single recognized field.
-4. Do not infer, add, or hallucinate fields that are not present in the text.
-5. Do not include explanations, reasoning, labels, markdown, or any text outside the output.
-6. Output must be a valid Python-style list of strings.
-
-Examples:
-
-Input:
-Distributed Computing, and Systems Software, Human-Centred Computing, Artificial Intelligence
-
-Output:
-["Distributed Computing and Systems Software", "Human-Centred Computing", "Artificial Intelligence"]
-
-Input:
-Machine Learning Data Management and Data Science Applied Computing
-
-Output:
-["Machine Learning", "Data Management and Data Science", "Applied Computing"]
-
-Input:
-Machine Learning
-
-Output:
-["Machine Learning"]
-
-Input:
-{text}
-
-Output:
-"""
-    return prompt.strip()
-    
 @task(name="preprocessing_core_openresearch_eventSeries", description="preprocessing OpenResearch event series pages using core data details")
 def preprocessing_core_openresearch_eventSeries(
     api_url: str,

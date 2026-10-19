@@ -199,6 +199,49 @@ def fix_event_template(text: str) -> Tuple[Optional[str], Optional[str]]:
     return fixed_text, None
 
 
+def build_scientific_fields_prompt(text: str) -> str:
+    prompt = f"""
+You are an information extraction system.
+
+Task:
+Extract only the meaningful scientific research fields explicitly present in the input text.
+
+Rules:
+1. Return all scientific research fields found in the text.
+2. Preserve complete field names and intelligently combine adjacent terms that belong to the same field.
+3. Do not split a scientific field into multiple entries when it forms a single recognized field.
+4. Do not infer, add, or hallucinate fields that are not present in the text.
+5. Do not include explanations, reasoning, labels, markdown, or any text outside the output.
+6. Output must be a valid Python-style list of strings.
+
+Examples:
+
+Input:
+Distributed Computing, and Systems Software, Human-Centred Computing, Artificial Intelligence
+
+Output:
+["Distributed Computing and Systems Software", "Human-Centred Computing", "Artificial Intelligence"]
+
+Input:
+Machine Learning Data Management and Data Science Applied Computing
+
+Output:
+["Machine Learning", "Data Management and Data Science", "Applied Computing"]
+
+Input:
+Machine Learning
+
+Output:
+["Machine Learning"]
+
+Input:
+{text}
+
+Output:
+"""
+    return prompt.strip()
+
+
 def clean_scientific_fields(llm_api_key: str, prompt: str) -> Optional[str]:
     resp_json = call_openrouter_task(prompt, llm_api_key)
     if not resp_json:
@@ -206,3 +249,4 @@ def clean_scientific_fields(llm_api_key: str, prompt: str) -> Optional[str]:
     text = extract_text_from_response(resp_json)
     # sleep(2)  # Add a small delay to avoid overwhelming the LLM service
     return text
+

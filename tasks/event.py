@@ -21,7 +21,9 @@ from tasks.mw_api import (
 from prefect import task
 from tasks.llm import (
     get_event_template, 
-    fix_event_template
+    fix_event_template,
+    clean_scientific_fields,
+    build_scientific_fields_prompt,
 )
 from tasks.mw_helper import find_template_block, set_multiple_params_in_template
 from tasks.utils import (
@@ -48,6 +50,7 @@ import pandas as pd
 import numpy as np
 import re
 from datetime import datetime
+from time import sleep
  
 PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "INFO")
 # PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "DEBUG")
@@ -141,6 +144,38 @@ def fix_event_wikitext(api_url: str, page_titles: List[str], session, csrf_token
         except Exception as e:
             logger.error("Get Event Wikitext Exception for %s: %s", page_title, e)
             continue
+        
+def fix_event_wikitext_using_llm(api_url: str, page_titles: List[str], session, csrf_token: str, llm_api_key: Optional[str], dry_run: bool, logger):
+    for idx, page_title in enumerate(page_titles):  # limit to first 10 for testing
+        logger.info(f"Processing page {idx}:{page_title}")
+        # fix duplicates and clean template using LLM if needed
+        try:
+            event_wikitext = get_page_wikitext(api_url, page_title, session)
+            event_wikitext_org = event_wikitext
+            event_json = extract_event_fields_from_wikitext(event_wikitext)
+            logger.debug(f"""Event Page {page_title}: Json: {event_json} event_wikitext: {event_wikitext}""")
+            field = event_json.get("Field", None)
+            # use LLM to fix separate the fields using semicolons
+            if llm_api_key and field and ';' not in field:
+                prompt = build_scientific_fields_prompt(field)
+                llm_output = clean_scientific_fields(llm_api_key, prompt)
+                llm_output = eval(llm_output) if llm_output else None
+                logger.debug(f"LLM output for {page_title}: {llm_output}")
+                if llm_output:
+                    field = '; '.join(llm_output)  # convert the string representation of list to actual list and join with semicolon
+                    event_wikitext, changed, old_tpl = set_multiple_params_in_template(event_wikitext, {"Field": field}, "Event", False)
+            summary = f"Cleaned {page_title} with new field {field}"
+            if event_wikitext != event_wikitext_org:
+                res = edit_page(api_url, page_title, event_wikitext, csrf_token, session, summary, dry_run)
+                if res.get('error'):
+                    logger.error("Edit result for page_title %s: result: %s", page_title, res['error']['code'])
+                else:
+                    logger.info(f"successfully edit result for page_title: {page_title}")
+            sleep(5)  # Add a small delay to avoid overwhelming the LLM service
+        except Exception as e:
+            logger.error("Get Event Wikitext Exception for %s: %s", page_title, e)
+            continue
+
             
     
 def fix_event_duplicates(api_url: str, page_titles: List[str], session, csrf_token: str, llm_api_key: Optional[str], dry_run: bool, logger):
