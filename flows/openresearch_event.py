@@ -62,7 +62,7 @@ if __name__ == "__main__":
                         PASS,
                         core_all_details_path,
                         template_name="Event",
-                        llm_api_key='', #os.environ.get("OPENROUTER_API_KEY"),
+                        llm_api_key=os.environ.get("OPENROUTER_API_KEY"),
                         dry_run=False,
                         )
     
