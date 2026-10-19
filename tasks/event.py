@@ -156,7 +156,7 @@ def fix_event_wikitext_using_llm(api_url: str, page_titles: List[str], session, 
             logger.debug(f"""Event Page {page_title}: Json: {event_json} event_wikitext: {event_wikitext}""")
             field = event_json.get("Field", None)
             # use LLM to fix separate the fields using semicolons
-            if llm_api_key and field and ';' not in field and ',' in field:
+            if llm_api_key and field and (',' in field or 'and' in field.lower()):
                 prompt = build_scientific_fields_prompt(field)
                 llm_output = clean_scientific_fields(llm_api_key, prompt)
                 llm_output = eval(llm_output) if llm_output else None
