@@ -163,8 +163,8 @@ def fix_event_wikitext_using_llm(api_url: str, page_titles: List[str], session, 
                 logger.debug(f"LLM output for {page_title}: {llm_output}")
                 if llm_output:
                     field = '; '.join(llm_output)  # convert the string representation of list to actual list and join with semicolon
-                    event_wikitext, changed, old_tpl = set_multiple_params_in_template(event_wikitext, {"Field": field}, "Event", False)
                     sleep(5)  # Add a small delay to avoid overwhelming the LLM service
+                    event_wikitext, changed, old_tpl = set_multiple_params_in_template(event_wikitext, {"Field": field}, "Event", False)
             summary = f"Cleaned {page_title} with new field {field}"
             if event_wikitext != event_wikitext_org:
                 res = edit_page(api_url, page_title, event_wikitext, csrf_token, session, summary, dry_run)
