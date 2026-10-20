@@ -22,9 +22,9 @@ PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "INFO")
 
 
 PROPERTY_TEMPLATES = {
-    # "Has location city": ("{{city_data}}", "{{city data}}", "{{Event", "{{event"),
-    # "Has location state": ("{{state_data}}", "{{state data}}", "{{Event", "{{event"),
-    # "Has location country": ("{{country_data}}", "{{country data}}", "{{Event", "{{event"),
+    "Has location city": ("{{city_data}}", "{{city data}}", "{{Event", "{{event"),
+    "Has location state": ("{{state_data}}", "{{state data}}", "{{Event", "{{event"),
+    "Has location country": ("{{country_data}}", "{{country data}}", "{{Event", "{{event"),
     "Field": ("{{research_field}}", "{{research_field", "{{research field", "{{Event", "{{event")
 }
 
