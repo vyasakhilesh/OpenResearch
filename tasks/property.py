@@ -22,9 +22,9 @@ PREFECT_LOGGING_LEVEL = os.environ.get("PREFECT_LOGGING_LEVEL", "INFO")
 
 
 PROPERTY_TEMPLATES = {
-    "Has location city": ("{{city_data}}", "{{city data}}", "{{Event", "{{event"),
-    "Has location state": ("{{state_data}}", "{{state data}}", "{{Event", "{{event"),
-    "Has location country": ("{{country_data}}", "{{country data}}", "{{Event", "{{event"),
+    # "Has location city": ("{{city_data}}", "{{city data}}", "{{Event", "{{event"),
+    # "Has location state": ("{{state_data}}", "{{state data}}", "{{Event", "{{event"),
+    # "Has location country": ("{{country_data}}", "{{country data}}", "{{Event", "{{event"),
     "Field": ("{{research_field}}", "{{research_field", "{{research field", "{{Event", "{{event")
 }
 
@@ -125,6 +125,9 @@ def fix_property_wikitext(
             property_wikitext_org = property_wikitext
             logger.debug("Property Wikitext: %s", property_wikitext)
             
+            property_wikitext = re.sub(r'(?im)^\|science\|[^}\n]*}}\s*\n?', '', property_wikitext)
+            property_wikitext = re.sub(r'(?im)^\|science[^}\n]*}}\s*\n?', '', property_wikitext)
+            
             if any(marker in property_wikitext for marker in ("{{Event", "{{event")):
                property_wikitext = property_wikitext.replace(f"{template_markers[0]}", "")
                
@@ -133,7 +136,7 @@ def fix_property_wikitext(
                 # add the expected template to the beginning of the page text
                 property_wikitext = f"{template_markers[0]}\n{property_wikitext}"
                 
-
+            
             if property_wikitext != property_wikitext_org:
                 summary = f"Edited {page_title} with new text {property_wikitext}"
                 res = edit_page(api_url, page_title, property_wikitext, csrf_token, session, summary, dry_run)
