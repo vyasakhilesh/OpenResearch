@@ -373,10 +373,10 @@ def preprocessing_openresearch_eventSeries(
     
     
     # fix event wikitext
-    # fix_eventSeries_wikitext(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
+    fix_eventSeries_wikitext(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
     
     # fix event wikitext using LLM if llm_api_key is provided
-    fix_eventSeries_wikitext_using_llm(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
+    # fix_eventSeries_wikitext_using_llm(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
         
     return True
 

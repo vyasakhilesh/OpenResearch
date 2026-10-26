@@ -378,11 +378,8 @@ def preprocessing_openresearch_events(
     # fix event ordinal
     # fix_event_ordinal(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
     
-    # fix event wikitext
-    # fix_event_wikitext(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
-    
     # fix event scientific fields
-    fix_event_wikitext_using_llm(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
+    # fix_event_wikitext_using_llm(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
     
     # fix event places
     # fix_event_place(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
@@ -392,6 +389,9 @@ def preprocessing_openresearch_events(
     
     # fix and merge event template
     # fix_merging_of_event_templates(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
+    
+    # fix event wikitext
+    fix_event_wikitext(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)    
     
     return True
 
