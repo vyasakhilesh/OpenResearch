@@ -34,7 +34,7 @@ from tasks.utils import (
     normalize_event_dates,
     extract_acronym_year,
     normalize_homepage,
-    reorder_event_template,
+    reorder_template_keys,
     find_event_mode,
     destination_join_templates_case_insensitive,
     append_event_template_to_df,
@@ -106,7 +106,7 @@ def fix_event_wikitext(api_url: str, page_titles: List[str], session, csrf_token
                     event_wikitext, changed, old_tpl = set_multiple_params_in_template(event_wikitext, {"Acronym": acronym}, "Event", False)
             
             # reorder event template keys and clean wikitext
-            event_wikitext = reorder_event_template(event_wikitext)            
+            event_wikitext = reorder_template_keys(event_wikitext)            
             pre_src_pattern = r"=== Sources ===\s*\}}\s*"
             src_pattern = r"=== Sources ===\s*\}\s*"
             ordinal_re = re.compile(r'\|\s*ordinal\s*=\s*["\']?\s*\d{4}\s*["\']?', re.IGNORECASE)
@@ -133,7 +133,7 @@ def fix_event_wikitext(api_url: str, page_titles: List[str], session, csrf_token
             # transform wiki categories to title case and remove quotes from category names
             event_wikitext = convert_wiki_categories(event_wikitext)
             # reorder event template keys
-            event_wikitext = reorder_event_template(event_wikitext)
+            event_wikitext = reorder_template_keys(event_wikitext)
             summary = f"Cleaned {page_title} with new text {event_wikitext}"
             if event_wikitext != event_wikitext_org:
                 res = edit_page(api_url, page_title, event_wikitext, csrf_token, session, summary, dry_run)
@@ -339,7 +339,7 @@ def fix_event_place(api_url: str, page_titles: List[str], session, csrf_token: s
                     event_wikitext = re.sub(r'^\|\s*Country\s*=.*\n?', '', event_wikitext, flags=re.IGNORECASE | re.MULTILINE)
                     new_params["WrongCountry"] = country
                 new_wikitext = set_multiple_params_in_template(event_wikitext, new_params, "Event")[0]
-                new_wikitext = reorder_event_template(new_wikitext)
+                new_wikitext = reorder_template_keys(new_wikitext)
                 summary = f"Fixed place for {page_title} from {location} to {city_new}, {state_new}, {country_new} (automated)"
                 logger.debug(f"New wikitext for {page_title}: {new_wikitext}")
                 res = edit_page(api_url, page_title, new_wikitext, csrf_token, session, summary, dry_run)

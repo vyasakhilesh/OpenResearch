@@ -16,7 +16,7 @@ from tasks.mw_helper import set_multiple_params_in_template
 from tasks.utils import (extract_eventSeries_fields_from_wikitext, 
                          string_similarity_levenshtein, 
                          string_similarity_rapidfuzz,
-                         reorder_event_template,
+                         reorder_template_keys,
                          normalize_homepage,
                          append_eventSeries_template_to_df,
                          transform_eventSeries_values,
@@ -304,7 +304,7 @@ def fix_eventSeries_wikitext(api_url: str, page_titles: List[str], session, csrf
             # transform wiki categories to title case and remove quotes from category names
             eventSeries_wikitext = convert_wiki_categories(eventSeries_wikitext)
             # fix eventSeries_wikitext template order
-            eventSeries_wikitext = reorder_event_template(eventSeries_wikitext, "Event series")
+            eventSeries_wikitext = reorder_template_keys(eventSeries_wikitext, "Event series")
             summary = f"Cleaned {page_title} with new text {eventSeries_wikitext}"
             if eventSeries_wikitext != eventSeries_wikitext_org:
                 res = edit_page(api_url, page_title, eventSeries_wikitext, csrf_token, session, summary, dry_run)

@@ -6,7 +6,7 @@ from tasks.llm import clean_scientific_fields, build_scientific_fields_prompt
 from tasks.mw_auth import login_and_get_csrf
 from tasks.mw_api import (
     get_journal_members,
-    get_series_titles,
+    get_journal_titles,
     get_page_wikitext,
     create_page,
     edit_page,
@@ -16,11 +16,9 @@ from tasks.mw_helper import set_multiple_params_in_template
 from tasks.utils import (extract_journal_fields_from_wikitext, 
                          string_similarity_levenshtein, 
                          string_similarity_rapidfuzz,
-                         reorder_journal_template,
+                         reorder_template_keys,
                          normalize_homepage,
-                         append_journal_template_to_df,
                          transform_journal_values,
-                         transform_core_values,
                          convert_wiki_categories
                          )
 import os
@@ -56,7 +54,7 @@ def deduplicate_openresearch_journal(
     csrf_token, session = login_and_get_csrf(api_url, username, password)
     
     # 1. collect pages
-    page_titles = get_series_titles(api_url, session, title=f"Category:{template_name}")
+    page_titles = get_journal_titles(api_url, session, title=f"Category:{template_name}")
     logger.info(f"Found {len(page_titles)} pages, e.g., {page_titles[0:50]}")
     # iterate through all page_titles and compare the title of page_title with all other titles in page_titles, if the title is similar to another title, log a warning
     logger.info(f"Checking for similar titles in existing series pages")
@@ -140,7 +138,7 @@ def fix_journal_wikitext(api_url: str, page_titles: List[str], session, csrf_tok
             # transform wiki categories to title case and remove quotes from category names
             journal_wikitext = convert_wiki_categories(journal_wikitext)
             # fix journal_wikitext template order
-            journal_wikitext = reorder_journal_template(journal_wikitext, "Journal")
+            journal_wikitext = reorder_template_keys(journal_wikitext, "Journal")
             summary = f"Cleaned {page_title} with new text {journal_wikitext}"
             if journal_wikitext != journal_wikitext_org:
                 res = edit_page(api_url, page_title, journal_wikitext, csrf_token, session, summary, dry_run)

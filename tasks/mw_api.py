@@ -60,6 +60,23 @@ def get_category_members(api_url: str, session, category_title: str) -> List[str
     return titles
 
 @task
+def get_journal_members(api_url: str, session, category_title: str = "Category:Journal") -> List[str]:
+    params = {"action":"query","list":"categorymembers","cmtitle":category_title, "cmlimit":"max","format":"json"}
+    titles: List[str] = []
+    while True:
+        r = session.get(api_url, params=params, timeout=30)
+        r.raise_for_status()
+        data = r.json()
+        members = data.get("query", {}).get("categorymembers", [])
+        for m in members:
+            titles.append(m["title"])
+        if "continue" in data:
+            params.update(data["continue"])
+        else:
+            break
+    return titles
+
+@task
 def get_property_usage_count(api_url: str, session, property_name):
     params = {"action": "browsebyproperty", "property": property_name, "format": "json",}
     r = session.get(api_url, params=params, timeout=30)
@@ -201,6 +218,23 @@ def delete_page(api_url: str, title: str, csrf_token: str, session):
 # get series titles
 @task
 def get_series_titles(api_url: str, session, title:str="Category:Event series") -> List[str]:
+    params = {"action":"query","list":"categorymembers","cmtitle":title,"cmlimit":"max","format":"json"}
+    titles = []
+    while True:
+        r = session.get(api_url, params=params)
+        r.raise_for_status()
+        data = r.json()
+        members = data.get("query", {}).get("categorymembers", [])
+        for m in members:
+            titles.append(m["title"])
+        if "continue" in data:
+            params.update(data["continue"])
+        else:
+            break
+    return titles
+
+@task
+def get_journal_titles(api_url: str, session, title:str="Category:Journal") -> List[str]:
     params = {"action":"query","list":"categorymembers","cmtitle":title,"cmlimit":"max","format":"json"}
     titles = []
     while True:

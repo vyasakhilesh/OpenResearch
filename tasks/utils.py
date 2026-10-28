@@ -151,6 +151,25 @@ EventSeries_KEYS_TO_TRANSFORM: List[str] = [
     "organizer"
 ]
 
+Journal_TEMPLATE_ORDER = [
+    "Acronym",
+    "Title",
+    "Field",
+    "Logo",
+    "Has issn",
+    "Has editor",
+    "Has publisher"
+    "Homepage",
+    "Has frequency"
+]
+
+Journal_KEYS_TO_TRANSFORM: List[str] = [
+    "Title",
+    "Field",
+    "Has editor",
+    "Has publisher"
+]
+
 CORE_RANKS_LIST=['A*', 'A', 'B', 'C', 'Unranked', 'Unranked: Merged', 'Unranked: Not Primarily CS', 'NA', 'TBR', 'Journal Published', 'Multiconference', 
                  'National', 'National: Bulgaria', 'National: China', 'National: Croatia', 'National: Czech', 
                  'National: Czecholslovakia', 'National: France', 'National: Germany', 'National: India', 'National: Iran', 
@@ -333,6 +352,49 @@ def extract_eventSeries_fields_from_wikitext(text: str) -> Dict[str, Optional[st
         "Title": _none_if_empty(title),
         "Acronym": _none_if_empty(acronym),
         "Field": _none_if_empty(field),
+    }
+    
+def extract_journal_fields_from_wikitext(text: str) -> Dict[str, Optional[str]]:
+    """
+    Parse a MediaWiki Event template block and return a dict with keys:
+    'Series', 'Title', 'Field'. Values are strings or None if missing.
+    """
+    # Find the first {{Event ... }} block (non-greedy)
+    m = re.search(r"\{\{\s*Event\b(.*?)\}\}", text, re.DOTALL | re.IGNORECASE)
+    if not m:
+        return {"Title": None, "Field": None, 
+                'Acronym': None}
+
+    body = m.group(1)
+
+    # Parse lines like |Key=Value
+    fields = {}
+    for line in body.splitlines():
+        line = line.strip()
+        if not line.startswith("|"):
+            continue
+        # split at first '='
+        parts = line[1:].split("=", 1)
+        if len(parts) != 2:
+            continue
+        key, val = parts
+        key_n = _normalize_key(key)
+        val_s = _strip_quotes_and_ws(val)
+        fields[key_n] = val_s
+
+    # Extract Title and Field directly
+    title = fields.get("title") or None
+    field = fields.get("field") or None
+    acronym = fields.get("acronym") or None
+    
+    # Normalize empty strings to None
+    def _none_if_empty(x):
+        return x if x and x.strip() else None
+
+    return {
+        "Title": _none_if_empty(title),
+        "Acronym": _none_if_empty(acronym),
+        "Field":  _none_if_empty(field)
     }
     
 def _normalize_key(k: str) -> str:
@@ -757,12 +819,15 @@ def _find_event_block_bounds(text: str):
         i += 1
     return start, None
 
-def reorder_event_template(text: str, template_name:str="Event") -> str:
+def reorder_template_keys(text: str, template_name:str="Event") -> str:
     # canonical map
     if template_name == "Event":
         TEMPLATE_ORDER = EVENT_TEMPLATE_ORDER
     elif template_name == "Event series":
         TEMPLATE_ORDER = EVENT_SERIES_TEMPLATE_ORDER
+    elif template_name = "Journal":
+        TEMPLATE_ORDER = Journal_TEMPLATE_ORDER
+        
     CANONICAL_MAP = { _normalize_key_case(k): k for k in TEMPLATE_ORDER }
     KV_LINE_RE = re.compile(r'^\s*\|\s*(.+)$')
     
@@ -1137,6 +1202,39 @@ def transform_eventSeries_values(text: str) -> str:
 
     # Replace only the first Event series block found
     return block_re.sub(repl, text, count=1)
+
+def transform_journal_values(text: str) -> str:
+    keys_norm = {k.strip().lower() for k in Journal_KEYS_TO_TRANSFORM}
+
+    # Regex to find the Event block
+    block_re = re.compile(r'(\{\{Journal\b)(.*?)(\}\})', re.DOTALL | re.IGNORECASE)
+
+    def repl(match):
+        header, body, footer = match.group(1), match.group(2), match.group(3)
+        lines = body.splitlines()
+        out_lines = []
+        for line in lines:
+            # Match lines like "|Key=Value" with optional leading whitespace
+            line = line.strip().rstrip(';').strip().rstrip(';').strip()
+            m = re.match(r'(\s*\|\s*([^=]+?)\s*=\s*)(.*)', line, re.IGNORECASE)
+            if not m:
+                out_lines.append(line)
+                continue
+            prefix, key, val = m.group(1), m.group(2), m.group(3)
+            key_norm = key.strip().lower()
+            val_stripped = val.rstrip()
+            if key_norm in keys_norm and is_transformable_value(val_stripped):
+                new_val = title_case_preserve_acronyms(val_stripped)
+            else:
+                new_val = val_stripped
+            new_val = _strip_trailing_marker(new_val)
+            out_lines.append(f"{prefix}{new_val}")
+        new_body = "\n".join(out_lines)
+        return header + new_body + footer
+
+    # Replace only the first Event series block found
+    return block_re.sub(repl, text, count=1)
+
 
 def convert_wiki_categories(text: str, stopwords: Optional[Iterable[str]] = None) -> str:
     """
