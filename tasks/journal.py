@@ -5,7 +5,7 @@ from prefect import get_run_logger, task
 from tasks.llm import clean_scientific_fields, build_scientific_fields_prompt
 from tasks.mw_auth import login_and_get_csrf
 from tasks.mw_api import (
-    get_event_members,
+    get_journal_members,
     get_series_titles,
     get_page_wikitext,
     create_page,
@@ -16,7 +16,7 @@ from tasks.mw_helper import set_multiple_params_in_template
 from tasks.utils import (extract_journal_fields_from_wikitext, 
                          string_similarity_levenshtein, 
                          string_similarity_rapidfuzz,
-                         reorder_event_template,
+                         reorder_journal_template,
                          normalize_homepage,
                          append_journal_template_to_df,
                          transform_journal_values,
@@ -126,9 +126,9 @@ def fix_journal_wikitext(api_url: str, page_titles: List[str], session, csrf_tok
         try:
             journal_wikitext = get_page_wikitext(api_url, page_title, session)
             journal_wikitext_org = journal_wikitext
-            event_json = extract_journal_fields_from_wikitext(journal_wikitext)
-            logger.debug(f"""Journal Page {page_title}: Json: {event_json} journal_wikitext: {journal_wikitext}""")
-            acronym = event_json.get("Acronym", None)
+            journal_json = extract_journal_fields_from_wikitext(journal_wikitext)
+            logger.debug(f"""Journal Page {page_title}: Json: {journal_json} journal_wikitext: {journal_wikitext}""")
+            acronym = journal_json.get("Acronym", None)
             # fix acronym
             if acronym is None:
                 acronym = page_title
@@ -140,7 +140,7 @@ def fix_journal_wikitext(api_url: str, page_titles: List[str], session, csrf_tok
             # transform wiki categories to title case and remove quotes from category names
             journal_wikitext = convert_wiki_categories(journal_wikitext)
             # fix journal_wikitext template order
-            journal_wikitext = reorder_event_template(journal_wikitext, "Journal")
+            journal_wikitext = reorder_journal_template(journal_wikitext, "Journal")
             summary = f"Cleaned {page_title} with new text {journal_wikitext}"
             if journal_wikitext != journal_wikitext_org:
                 res = edit_page(api_url, page_title, journal_wikitext, csrf_token, session, summary, dry_run)
@@ -149,7 +149,7 @@ def fix_journal_wikitext(api_url: str, page_titles: List[str], session, csrf_tok
                 else:
                     logger.info(f"successfully edit result for page_title: {page_title}")
         except Exception as e:
-            logger.error("Get Event Wikitext Exception for %s: %s", page_title, e)
+            logger.error("Get journal Wikitext Exception for %s: %s", page_title, e)
             continue
 
 def fix_journal_wikitext_using_llm(api_url: str, page_titles: List[str], session, csrf_token: str, llm_api_key: Optional[str], dry_run: bool, logger):
@@ -159,9 +159,9 @@ def fix_journal_wikitext_using_llm(api_url: str, page_titles: List[str], session
         try:
             journal_wikitext = get_page_wikitext(api_url, page_title, session)
             journal_wikitext_org = journal_wikitext
-            event_json = extract_journal_fields_from_wikitext(journal_wikitext)
-            logger.debug(f"""Journal Page {page_title}: Json: {event_json} journal_wikitext: {journal_wikitext}""")
-            field = event_json.get("Field", None)
+            journal_json = extract_journal_fields_from_wikitext(journal_wikitext)
+            logger.debug(f"""Journal Page {page_title}: Json: {journal_json} journal_wikitext: {journal_wikitext}""")
+            field = journal_json.get("Field", None)
             # use LLM to fix separate the fields using semicolons
             if llm_api_key and field and ';' not in field:
                 prompt = build_scientific_fields_prompt(field)
@@ -180,7 +180,7 @@ def fix_journal_wikitext_using_llm(api_url: str, page_titles: List[str], session
                 else:
                     logger.info(f"successfully edit result for page_title: {page_title}")
         except Exception as e:
-            logger.error("Get Event Wikitext Exception for %s: %s", page_title, e)
+            logger.error("Get journal Wikitext Exception for %s: %s", page_title, e)
             continue
             
 
@@ -190,7 +190,7 @@ def preprocessing_openresearch_journal(
     username: str,
     password: str,
     core_all_details_path: str,
-    template_name: str = "Event",
+    template_name: str = "journal",
     llm_api_key: Optional[str] = None,
     dry_run: bool = True,
 ):
@@ -204,14 +204,14 @@ def preprocessing_openresearch_journal(
     csrf_token, session = login_and_get_csrf(api_url, username, password)
         
     # 1. collect pages
-    page_titles = get_event_members(api_url, session, f"Category:{template_name}")
+    page_titles = get_journal_members(api_url, session, f"Category:{template_name}")
     logger.info(f"Found {len(page_titles)} pages, e.g., {page_titles[0:60]}")
     
     
-    # fix event wikitext
+    # fix journal wikitext
     fix_journal_wikitext(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
     
-    # fix event wikitext using LLM if llm_api_key is provided
+    # fix journal wikitext using LLM if llm_api_key is provided
     # fix_journal_wikitext_using_llm(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
         
     return True
@@ -222,7 +222,7 @@ def create_stats_openresearch_journal(
     username: str,
     password: str,
     core_all_details_path: str,
-    template_name: str = "Event",
+    template_name: str = "journal",
     llm_api_key: Optional[str] = None,
     dry_run: bool = True,
 ):
@@ -236,16 +236,16 @@ def create_stats_openresearch_journal(
     csrf_token, session = login_and_get_csrf(api_url, username, password)
         
     # 1. collect pages
-    page_titles = get_event_members(api_url, session, f"Category:{template_name}")
+    page_titles = get_journal_members(api_url, session, f"Category:{template_name}")
     logger.info(f"Found {len(page_titles)} pages, e.g., {page_titles[0:50]}")
     
-    # 2. collect statistics of open research event pages in a dataframe
+    # 2. collect statistics of open research journal pages in a dataframe
     df_stats_openresearch_journal = pd.DataFrame()
     for idx, page_title in enumerate(page_titles):  # limit to first 10 for testing
         logger.info(f"Processing page {idx}:{page_title}")
         try:
-            event_wikitext = get_page_wikitext(api_url, page_title, session)
-            df_stats_openresearch_journal = append_journal_template_to_df(event_wikitext, df_stats_openresearch_journal)
+            journal_wikitext = get_page_wikitext(api_url, page_title, session)
+            df_stats_openresearch_journal = append_journal_template_to_df(journal_wikitext, df_stats_openresearch_journal)
         except Exception as e:
             logger.error("Get journal Wikitext Exception for %s: %s", page_title, e)
             continue
