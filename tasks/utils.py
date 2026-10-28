@@ -825,7 +825,7 @@ def reorder_template_keys(text: str, template_name:str="Event") -> str:
         TEMPLATE_ORDER = EVENT_TEMPLATE_ORDER
     elif template_name == "Event series":
         TEMPLATE_ORDER = EVENT_SERIES_TEMPLATE_ORDER
-    elif template_name = "Journal":
+    elif template_name == "Journal":
         TEMPLATE_ORDER = Journal_TEMPLATE_ORDER
         
     CANONICAL_MAP = { _normalize_key_case(k): k for k in TEMPLATE_ORDER }

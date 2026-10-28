@@ -202,12 +202,15 @@ def preprocessing_openresearch_journal(
     csrf_token, session = login_and_get_csrf(api_url, username, password)
         
     # 1. collect pages
-    page_titles = get_journal_members(api_url, session, f"Category:{template_name}")
-    logger.info(f"Found {len(page_titles)} pages, e.g., {page_titles[0:60]}")
+    page_titles = []
+    for members in get_journal_members(api_url, session, f"Category:{template_name}"):
+        event_list = get_journal_members(api_url, session, members)
+        page_titles.extend(event_list)    
+    logger.info(f"Found {len(page_titles)} pages, e.g., {page_titles[0:50]}")
     
     
     # fix journal wikitext
-    fix_journal_wikitext(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
+    fix_journal_wikitext(api_url, page_titles[0:3], session, csrf_token, llm_api_key, dry_run, logger)
     
     # fix journal wikitext using LLM if llm_api_key is provided
     # fix_journal_wikitext_using_llm(api_url, page_titles, session, csrf_token, llm_api_key, dry_run, logger)
@@ -243,7 +246,7 @@ def create_stats_openresearch_journal(
         logger.info(f"Processing page {idx}:{page_title}")
         try:
             journal_wikitext = get_page_wikitext(api_url, page_title, session)
-            df_stats_openresearch_journal = append_journal_template_to_df(journal_wikitext, df_stats_openresearch_journal)
+            # df_stats_openresearch_journal = append_journal_template_to_df(journal_wikitext, df_stats_openresearch_journal)
         except Exception as e:
             logger.error("Get journal Wikitext Exception for %s: %s", page_title, e)
             continue
