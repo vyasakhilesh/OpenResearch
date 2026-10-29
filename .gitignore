@@ -4,6 +4,7 @@ __pycache__
 openresearch/
 .vscode
 test.ipynb
+test.py
 export_env.sh
 invoices
 output.txt
