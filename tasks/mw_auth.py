@@ -4,7 +4,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from typing import Tuple
 
-DEFAULT_USER_AGENT = "openresearch-core-ranker/1.0 (contact: contact@example.org)"
+DEFAULT_USER_AGENT = "openresearch-core-ranker/1.0 (contact: information@tib.eu)"
 
 def _make_session() -> requests.Session:
     session = requests.Session()
@@ -22,7 +22,7 @@ def login_and_get_csrf(api_url: str, username: str, password: str) -> Tuple[str,
     try:
         r = session.get(api_url, params={"action":"query","meta":"tokens","type":"login","format":"json"}, timeout=30)
         r.raise_for_status()
-        logger.info(
+        logger.debug(
             "API response: status=%s content_type=%r final_url=%s redirects=%s body_start=%r",
             r.status_code,
             r.headers.get("Content-Type"),
