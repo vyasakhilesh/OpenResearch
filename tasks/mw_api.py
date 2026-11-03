@@ -74,6 +74,7 @@ def get_journal_members(api_url: str, session, category_title: str = "Category:J
             params.update(data["continue"])
         else:
             break
+    # print("Journal titles: ", titles)
     return titles
 
 @task
@@ -248,6 +249,7 @@ def get_journal_titles(api_url: str, session, title:str="Category:Journal") -> L
             params.update(data["continue"])
         else:
             break
+    # print("Journal titles: ", titles)
     return titles
 
 # Existing page

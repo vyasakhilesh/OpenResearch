@@ -16,8 +16,9 @@ def _make_session() -> requests.Session:
     return session
 
 @task(retries=2, retry_delay_seconds=10)
-def login_and_get_csrf(api_url: str, username: str, password: str) -> Tuple[str, dict]:
-    logger = get_run_logger()
+def login_and_get_csrf(api_url: str, username: str, password: str, logger= None) -> Tuple[str, dict]:
+    if logger is None:
+        logger = get_run_logger()
     session = _make_session()        
     try:
         r = session.get(api_url, params={"action":"query","meta":"tokens","type":"login","format":"json"}, timeout=30)

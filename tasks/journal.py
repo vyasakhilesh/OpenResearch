@@ -199,13 +199,10 @@ def preprocessing_openresearch_journal(
     # get core_all_details dataframe
     df_core_all_details = pd.read_csv(core_all_details_path)
     df_core_all_details = df_core_all_details.replace(np.nan, '', regex=True)  # Replace NaN with empty string
-    csrf_token, session = login_and_get_csrf(api_url, username, password)
+    csrf_token, session = login_and_get_csrf(api_url, username, password, logger)
         
     # 1. collect pages
-    page_titles = []
-    for members in get_journal_members(api_url, session, f"Category:{template_name}"):
-        event_list = get_journal_members(api_url, session, members)
-        page_titles.extend(event_list)    
+    page_titles = get_journal_members(api_url, session, f"Category:{template_name}")
     logger.info(f"Found {len(page_titles)} pages, e.g., {page_titles[0:50]}")
     
     
